@@ -6,6 +6,8 @@
     <title>Арена Вирусов</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; }
+        .lucifer-fire { position: absolute; background: radial-gradient(circle, #ff4500 0%, transparent 70%); pointer-events: none; z-index: 9991; animation: burn 0.5s infinite alternate; }
+        @keyframes burn { from { transform: scale(1); opacity: 0.6; } to { transform: scale(1.2); opacity: 0.9; } }
     </style>
 </head>
 <body>
@@ -22,13 +24,31 @@ arena.style.overflow = "hidden"; document.body.appendChild(arena);
 window.score = parseInt(localStorage.getItem("virusGame_score")) || 0;
 window.unlockedWeapons = JSON.parse(localStorage.getItem("virusGame_weapons")) || ["laser", "bomb_default"];
 window.hasDarkBlade = localStorage.getItem("virusGame_hasDarkBlade") === "true";
+window.hasLuciferSword = localStorage.getItem("virusGame_hasLuciferSword") === "true";
+window.firstBossDefeated = localStorage.getItem("virusGame_boss1") === "true";
+
 if (window.hasDarkBlade && !window.unlockedWeapons.includes("darkBlade")) window.unlockedWeapons.push("darkBlade");
+if (window.hasLuciferSword && !window.unlockedWeapons.includes("luciferSword")) window.unlockedWeapons.push("luciferSword");
 
 window.currentWeapon = "laser"; window.flyingViruses = [];
-window.currentRound = 1; window.bombsLeft = 2; window.spawnedThisRound = 0;
+window.currentRound = 1; window.bombsLeft = 2; window.freezesLeft = 2; window.spawnedThisRound = 0;
 window.cooldowns = { staff: 0, lightOfGod: 0, hypnosis: 0 };
+window.cursorSpeedMultiplier = 1; // Замедление курсора огнем
+
 let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
-arena.onmousemove = (e) => { mouseX = e.clientX; mouseY = e.clientY; handleDarkBladeTrace(); };
+let realMouseX = mouseX, realMouseY = mouseY;
+
+// Плавное движение курсора для механики замедления
+arena.onmousemove = (e) => {
+    realMouseX = e.clientX; realMouseY = e.clientY;
+    handleDarkBladeTrace();
+    handleLuciferTrace();
+};
+
+setInterval(() => {
+    mouseX += (realMouseX - mouseX) * (0.2 * window.cursorSpeedMultiplier);
+    mouseY += (realMouseY - mouseY) * (0.2 * window.cursorSpeedMultiplier);
+}, 16);
 
 // ==========================================
 // 2. ИНТЕРФЕЙС, ТАБЛО И ИНСТРУКЦИЯ
@@ -50,7 +70,7 @@ const shopBtn = spawnBtn.cloneNode(true); shopBtn.textContent = "МАГАЗИН 
 const scoreBoard = document.createElement("div"); scoreBoard.style.position = "absolute"; scoreBoard.style.top = "20px"; scoreBoard.style.right = "20px"; scoreBoard.style.color = "#00ff00"; scoreBoard.style.fontFamily = "monospace"; scoreBoard.style.fontSize = "24px"; scoreBoard.style.fontWeight = "bold"; scoreBoard.style.zIndex = "9999"; scoreBoard.textContent = "ОЧКИ: " + window.score; arena.appendChild(scoreBoard);
 const roundBoard = scoreBoard.cloneNode(true); roundBoard.style.right = "250px"; roundBoard.textContent = "РАУНД: " + window.currentRound; arena.appendChild(roundBoard);
 
-const infoBox = document.createElement("div"); infoBox.style.position = "absolute"; infoBox.style.bottom = "20px"; infoBox.style.left = "20px"; infoBox.style.width = "450px"; infoBox.style.backgroundColor = "rgba(0,0,0,0.85)"; infoBox.style.border = "1px solid #00ff00"; infoBox.style.zIndex = "9999"; infoBox.style.display = "flex"; infoBox.style.flexDirection = "column"; arena.appendChild(infoBox);
+const infoBox = document.createElement("div"); infoBox.style.position = "absolute"; infoBox.style.bottom = "20px"; infoBox.style.left = "20px"; infoBox.style.width = "470px"; infoBox.style.backgroundColor = "rgba(0,0,0,0.85)"; infoBox.style.border = "1px solid #00ff00"; infoBox.style.zIndex = "9999"; infoBox.style.display = "flex"; infoBox.style.flexDirection = "column"; arena.appendChild(infoBox);
 const infoHeader = document.createElement("div"); infoHeader.style.padding = "10px 15px"; infoHeader.style.borderBottom = "1px solid #00ff00"; infoHeader.style.display = "flex"; infoHeader.style.justifyContent = "space-between"; infoHeader.style.alignItems = "center"; infoHeader.style.fontFamily = "monospace"; infoHeader.style.fontWeight = "bold"; infoHeader.style.color = "#00ff00"; infoHeader.style.cursor = "pointer"; infoBox.appendChild(infoHeader);
 const infoTitle = document.createElement("span"); infoHeader.appendChild(infoTitle);
 const toggleBtn = document.createElement("button"); toggleBtn.textContent = "[-] СВЕРНУТЬ"; toggleBtn.style.background = "transparent"; toggleBtn.style.border = "none"; toggleBtn.style.color = "#00ff00"; toggleBtn.style.fontFamily = "monospace"; toggleBtn.style.cursor = "pointer"; toggleBtn.style.fontWeight = "bold"; infoHeader.appendChild(toggleBtn);
@@ -62,14 +82,21 @@ toggleBtn.onclick = (e) => { e.stopPropagation(); toggleInfo(); }; infoHeader.on
 
 function updateInterfaceText() {
     infoTitle.textContent = window.currentRound % 10 === 0 ? `⚠️ РАУНД С БОССОМ ${window.currentRound} ⚠️` : `=== РАУНД ${window.currentRound} ===`;
-    const weaponsMap = { laser: "ЛАЗЕР", bomb_default: "БОМБА (за очки)", brick: "КИРПИЧ", poison: "ОТРАВА", darkBlade: "КЛИНОК ТЕМНОТЫ", gandalfStaff: "ПОСОХ ГЭНДАЛЬФА", godLight: "СВЕТ БОГА", hypnosis: "ГИПНОЗ" };
-    infoContent.textContent = `Оружие [1-8]: ${weaponsMap[window.currentWeapon]} | 'Q' - Бесплатная Бомба (${window.bombsLeft}/2)
-ХОТКЕИ: 1:Лазер | 2:Бомба | 3:Кирпич | 4:Отрава | 5:Клинок | 6:Посох | 7:Свет Бога | 8:Гипноз`;
+    const weaponsMap = { laser: "ЛАЗЕР", bomb_default: "БОМБА (за очки)", brick: "КИРПИЧ", poison: "ОТРАВА", darkBlade: "КЛИНОК ТЕМНОТЫ", gandalfStaff: "ПОСОХ ГЭНДАЛЬФА", godLight: "СВЕТ БОГА", hypnosis: "ГИПНОЗ", luciferSword: "МЕЧ ЛЮЦИФЕРА" };
+    infoContent.textContent = `Оружие [1-9]: ${weaponsMap[window.currentWeapon]} 
+'Q' - Бесплатная Бомба (${window.bombsLeft}/2) | 'E' - Заморозка врагов на 5с (${window.freezesLeft}/2)
+
+МЕЧ ЛЮЦИФЕРА (Выбор на 9):
+- Водите курсором для поджога вирусов
+- Клавиша 'F' - Заспавнить огонь под собой
+- Клавиша 'R' - Бросить меч вперед в вирусы
+
+ХОТКЕИ: 1:Лазер | 2:Бомба | 3:Кирпич | 4:Отрава | 5:Клинок | 6:Посох | 7:Свет Бога | 8:Гипноз | 9:Меч Люцифера`;
 }
 updateInterfaceText();
 
 // ==========================================
-// 3. ОКНО МАГАЗИНА С СКРОЛЛОМ
+// 3. ОКНО МАГАЗИНА С СКРОЛЛОМ И ЛЮЦИФЕРОМ
 // ==========================================
 const shopWindow = document.createElement("div");
 shopWindow.style.position = "absolute"; shopWindow.style.top = "80px"; shopWindow.style.left = "280px";
@@ -81,6 +108,19 @@ shopWindow.style.overflowY = "auto"; arena.appendChild(shopWindow);
 shopBtn.onclick = (e) => { e.stopPropagation(); shopWindow.style.display = shopWindow.style.display === "none" ? "block" : "none"; };
 
 const shopTitle = document.createElement("div"); shopTitle.style.fontWeight = "bold"; shopTitle.style.marginBottom = "15px"; shopTitle.textContent = "=== ОРУЖЕЙНАЯ (СКРОЛЛ ↓) ==="; shopWindow.appendChild(shopTitle);
+
+// Кнопка призыва Люцифера (секретный товар)
+const luciferBox = document.createElement("div");
+luciferBox.style.border = "2px solid #ff4500"; luciferBox.style.padding = "10px"; luciferBox.style.marginBottom = "15px";
+luciferBox.style.display = window.firstBossDefeated ? "flex" : "none";
+luciferBox.style.flexDirection = "column"; luciferBox.style.gap = "4px";
+
+const luciferName = document.createElement("span"); luciferName.style.color = "#ff4500"; luciferName.style.fontWeight = "bold"; luciferName.textContent = "🔥 ПРИЗВАТЬ ЛЮЦИФЕРА (УЛЬТРА-БОСС)";
+const luciferDesc = document.createElement("span"); luciferDesc.style.fontSize = "11px"; luciferDesc.style.color = "#aaa"; luciferDesc.textContent = "100 000 000 HP. Замедляет прицел огнем. Награда: Меч Люцифера!";
+const luciferCallBtn = document.createElement("button"); luciferCallBtn.style.background = "#300"; luciferCallBtn.style.color = "#ff4500"; luciferCallBtn.style.border = "1px solid #ff4500"; luciferCallBtn.style.cursor = "pointer"; luciferCallBtn.textContent = "ВЫЗВАТЬ НА ДУЭЛЬ";
+
+luciferCallBtn.onclick = (e) => { e.stopPropagation(); shopWindow.style.display = "none"; spawnLucifer(); };
+luciferBox.appendChild(luciferName); luciferBox.appendChild(luciferDesc); luciferBox.appendChild(luciferCallBtn); shopWindow.appendChild(luciferBox);
 
 const shopItems = [
     { id: "brick", name: "Кирпич (300 урона)", cost: 500, desc: "Одиночный бросок тяжелого кирпича.", color: "#cd853f" },
@@ -134,8 +174,8 @@ function playSound(type) {
         if (type === 'laser') {
             osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
             gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15); osc.start(now); osc.stop(now + 0.15);
-        } else if (type === 'explosion') {
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(120, now); osc.frequency.linearRampToValueAtTime(10, now + 0.4);
+        } else if (type === 'explosion' || type === 'fire') {
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(type === 'fire' ? 180 : 120, now); osc.frequency.linearRampToValueAtTime(10, now + 0.4);
             gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4); osc.start(now); osc.stop(now + 0.4);
         } else if (type === 'glass') {
             osc.type = 'sine'; osc.frequency.setValueAtTime(1500, now); osc.frequency.setValueAtTime(1800, now + 0.05);
@@ -154,11 +194,11 @@ function playSound(type) {
 }
 
 // ==========================================
-// 5. ДВИЖОК И СПАВН ВИРУСОВ
+// 5. ДВИЖОК И СПАВН ВИРУСОВ / БОССОВ
 // ==========================================
 spawnBtn.onclick = function(e) {
     e.stopPropagation();
-    if (window.spawnedThisRound >= getMaxViruses()) return;
+    if (window.spawnedThisRound >= getMaxViruses() || window.currentRound % 10 === 0 && window.flyingViruses.length > 0) return;
     
     window.spawnedThisRound++; updateSpawnButtonText();
     
@@ -166,11 +206,20 @@ spawnBtn.onclick = function(e) {
     const bossIndex = window.currentRound / 10;
     const maxHp = isBossRound ? (10000 * Math.pow(10, bossIndex - 1)) : (100 * window.currentRound);
     
+    createVirusElement(maxHp, isBossRound, false);
+};
+
+function createVirusElement(maxHp, isBoss, isLucifer) {
     const el = document.createElement("div");
     el.style.position = "absolute"; el.style.backgroundColor = "black"; el.style.fontFamily = "monospace";
     el.style.fontWeight = "bold"; el.style.cursor = "crosshair"; el.style.zIndex = "9995";
     
-    if (isBossRound) {
+    if (isLucifer) {
+        el.style.border = "6px solid #ff4500"; el.style.padding = "40px 60px"; el.style.fontSize = "30px"; el.style.color = "#fff";
+        el.style.background = "linear-gradient(45deg, #ff4500, #ff8c00)"; el.style.boxShadow = "0 0 50px #ff4500";
+        el.style.left = (window.innerWidth / 2 - 150) + "px"; el.style.top = (window.innerHeight / 2 - 80) + "px";
+        el.textContent = `😈 ЛЮЦИФЕР [100000000/100000000 HP]`;
+    } else if (isBoss) {
         el.style.border = "4px solid #8a2be2"; el.style.padding = "25px 40px"; el.style.fontSize = "24px"; el.style.color = "#fff"; el.style.boxShadow = "0 0 30px #ff3333";
         el.style.left = (window.innerWidth / 2 - 150) + "px"; el.style.top = (window.innerHeight / 2 - 50) + "px";
         el.textContent = `👑 БОСС [${maxHp}/${maxHp} HP]`;
@@ -181,43 +230,92 @@ spawnBtn.onclick = function(e) {
     }
     arena.appendChild(el);
 
-    const speed = isBossRound ? (14 + bossIndex * 2) : 5 * (1 + window.currentRound * 0.15);
+    const speed = isLucifer ? 22 : (isBoss ? (14 + (window.currentRound/10) * 2) : 5 * (1 + window.currentRound * 0.15));
     window.flyingViruses.push({
         element: el, x: parseFloat(el.style.left), y: parseFloat(el.style.top),
         speedX: (Math.random() - 0.5) * speed, speedY: (Math.random() - 0.5) * speed,
-        hp: maxHp, maxHp: maxHp, isBoss: isBossRound, id: window.spawnedThisRound, isZombie: false
+        hp: maxHp, maxHp: maxHp, isBoss: isBoss, id: window.spawnedThisRound, isZombie: false, isLucifer: isLucifer,
+        isFrozen: false, savedSpeedX: 0, savedSpeedY: 0, isBurning: false, burnTicks: 0
     });
-};
+}
+
+function spawnLucifer() {
+    window.spawnedThisRound = 1;
+    createVirusElement(100000000, true, true);
+    
+    // Люцифер спавнит замедляющий огонь каждые 1.5 секунды
+    window.luciferFireInterval = setInterval(() => {
+        const lucifer = window.flyingViruses.find(v => v.isLucifer);
+        if (!lucifer) { clearInterval(window.luciferFireInterval); return; }
+        
+        const f = document.createElement("div"); f.className = "lucifer-fire";
+        f.style.left = (lucifer.x + 30) + "px"; f.style.top = (lucifer.y + 30) + "px";
+        f.style.width = "180px"; f.style.height = "180px"; arena.appendChild(f);
+        playSound('fire');
+
+        // Проверка замедления курсора огнем
+        const checkSlow = setInterval(() => {
+            const fR = f.getBoundingClientRect();
+            const dist = Math.sqrt(Math.pow((fR.left+90) - mouseX, 2) + Math.pow((fR.top+90) - mouseY, 2));
+            window.cursorSpeedMultiplier = dist <= 90 ? 0.2 : 1; // Замедление в 5 раз
+        }, 100);
+
+        setTimeout(() => { clearInterval(checkSlow); window.cursorSpeedMultiplier = 1; f.remove(); }, 4000);
+    }, 1500);
+}
 
 function moveEngine() {
     window.flyingViruses.forEach(item => {
-        const rect = item.element.getBoundingClientRect();
-        item.x += item.speedX; item.y += item.speedY;
-        if (item.x <= 0 || item.x + rect.width >= window.innerWidth) item.speedX *= -1;
-        if (item.y <= 0 || item.y + rect.height >= window.innerHeight) item.speedY *= -1;
-        item.element.style.left = item.x + "px"; item.element.style.top = item.y + "px";
+        if (!item.isFrozen) {
+            const rect = item.element.getBoundingClientRect();
+            item.x += item.speedX; item.y += item.speedY;
+            if (item.x <= 0 || item.x + rect.width >= window.innerWidth) item.speedX *= -1;
+            if (item.y <= 0 || item.y + rect.height >= window.innerHeight) item.speedY *= -1;
+            item.element.style.left = item.x + "px"; item.element.style.top = item.y + "px";
+        }
     });
     requestAnimationFrame(moveEngine);
 }
 moveEngine();
 
+// Механика горения вирусов от Меча Люцифера (каждую секунду)
+setInterval(() => {
+    window.flyingViruses.forEach(item => {
+        if (item.isBurning && item.burnTicks > 0) {
+            item.burnTicks--;
+            item.element.style.backgroundColor = "#ff4500";
+            damageVirus(item, 600);
+            if (item.burnTicks <= 0) { item.isBurning = false; item.element.style.backgroundColor = "black"; }
+        }
+    });
+}, 1000);
+
 // ==========================================
-// 6. СЛЕД КЛИНИКА ТЕМНОТЫ И СМЕНА КООРДИНАТ
+// 6. СЛЕДЫ БЛИЖНЕГО ОРУЖИЯ (МЫШЬ)
 // ==========================================
 function handleDarkBladeTrace() {
     if (window.currentWeapon === "darkBlade" && window.unlockedWeapons.includes("darkBlade")) {
+        window.flyingViruses.forEach(item => {
+            const r = item.element.getBoundingClientRect();
+            if (!item.isZombie && mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) {
+                playSound('laser'); damageVirus(item, 15); 
+            }
+        });
+    }
+}
+
+function handleLuciferTrace() {
+    if (window.currentWeapon === "luciferSword" && window.unlockedWeapons.includes("luciferSword")) {
         const trace = document.createElement("div");
         trace.style.position = "absolute"; trace.style.left = mouseX + "px"; trace.style.top = mouseY + "px";
-        trace.style.width = "6px"; trace.style.height = "6px"; trace.style.borderRadius = "50%";
-        trace.style.backgroundColor = "#8a2be2"; trace.style.boxShadow = "0 0 10px #8a2be2";
-        trace.style.pointerEvents = "none"; trace.style.zIndex = "9996"; arena.appendChild(trace);
-        setTimeout(() => trace.remove(), 200);
+        trace.style.width = "10px"; trace.style.height = "10px"; trace.style.borderRadius = "50%";
+        trace.style.backgroundColor = "#ff4500"; trace.style.boxShadow = "0 0 15px #ff4500";
+        trace.style.pointerEvents = "none"; arena.appendChild(trace); setTimeout(() => trace.remove(), 250);
 
         window.flyingViruses.forEach(item => {
             const r = item.element.getBoundingClientRect();
             if (!item.isZombie && mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) {
-                playSound('laser');
-                damageVirus(item, 15); 
+                if (!item.isBurning) { item.isBurning = true; item.burnTicks = 5; }
             }
         });
     }
@@ -226,21 +324,13 @@ function handleDarkBladeTrace() {
 setInterval(() => {
     const zombies = window.flyingViruses.filter(v => v.isZombie);
     const normals = window.flyingViruses.filter(v => !v.isZombie);
-
     zombies.forEach(zombie => {
         const zR = zombie.element.getBoundingClientRect();
         const zX = zR.left + zR.width/2, zY = zR.top + zR.height/2;
-
         normals.forEach(normal => {
             const nR = normal.element.getBoundingClientRect();
-            const nX = nR.left + nR.width/2, nY = nR.top + nR.height/2;
-            
-            const dist = Math.sqrt(Math.pow(nX - zX, 2) + Math.pow(zY - nY, 2));
-            if (dist <= 150) {
-                playSound('zombie');
-                damageVirus(normal, 100);
-                damageVirus(zombie, 100);
-            }
+            const dist = Math.sqrt(Math.pow((nR.left + nR.width/2) - zX, 2) + Math.pow((nR.top + nR.height/2) - zY, 2));
+            if (dist <= 150) { playSound('zombie'); damageVirus(normal, 100); damageVirus(zombie, 100); }
         });
     });
 }, 1000);
@@ -250,11 +340,10 @@ setInterval(() => {
 // ==========================================
 arena.onclick = function(e) {
     const targetEl = e.target;
-    const isVirus = targetEl && targetEl.textContent && (targetEl.textContent.includes("TARGET") || targetEl.textContent.includes("БОСС") || targetEl.textContent.includes("ZOMBIE"));
+    const isVirus = targetEl && targetEl.textContent && (targetEl.textContent.includes("TARGET") || targetEl.textContent.includes("БОСС") || targetEl.textContent.includes("ZOMBIE") || targetEl.textContent.includes("ЛЮЦИФЕР"));
     
     if (window.currentWeapon === "brick" && window.unlockedWeapons.includes("brick")) {
-        playSound('glass');
-        createFlashEffect(mouseX, mouseY, 40, "#cd853f");
+        playSound('glass'); createFlashEffect(mouseX, mouseY, 40, "#cd853f");
         window.flyingViruses.forEach(item => {
             const r = item.element.getBoundingClientRect();
             if (!item.isZombie && mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) damageVirus(item, 300);
@@ -276,8 +365,8 @@ arena.onclick = function(e) {
             window.flyingViruses.forEach(item => {
                 if (!item.isZombie) {
                     const vR = item.element.getBoundingClientRect();
-                    const vX = vR.left + vR.width/2, vY = vR.top + vR.height/2;
-                    if (Math.sqrt(Math.pow(vX - pX, 2) + Math.pow(vY - pY, 2)) <= 70) damageVirus(item, 20);
+                    const dist = Math.sqrt(Math.pow((vR.left + vR.width/2) - pX, 2) + Math.pow((vR.top + vR.height/2) - pY, 2));
+                    if (dist <= 70) damageVirus(item, 20);
                 }
             });
         }, 1000);
@@ -288,13 +377,12 @@ arena.onclick = function(e) {
     if (window.currentWeapon === "gandalfStaff" && window.unlockedWeapons.includes("gandalfStaff")) {
         if (Date.now() < window.cooldowns.staff) { alert("Посох перезаряжается!"); return; }
         window.cooldowns.staff = Date.now() + 10000;
-        playSound('explosion');
-        createFlashEffect(mouseX, mouseY, 250, "#00ffff");
+        playSound('explosion'); createFlashEffect(mouseX, mouseY, 250, "#00ffff");
         window.flyingViruses.forEach(item => {
             if (!item.isZombie) {
                 const r = item.element.getBoundingClientRect();
-                const vX = r.left + r.width/2, vY = r.top + r.height/2;
-                if (Math.sqrt(Math.pow(vX - mouseX, 2) + Math.pow(vY - mouseY, 2)) <= 250) damageVirus(item, 600);
+                const dist = Math.sqrt(Math.pow((r.left + r.width/2) - mouseX, 2) + Math.pow((r.top + r.height/2) - mouseY, 2));
+                if (dist <= 250) damageVirus(item, 600);
             }
         });
         return;
@@ -303,13 +391,12 @@ arena.onclick = function(e) {
     if (window.currentWeapon === "godLight" && window.unlockedWeapons.includes("godLight")) {
         if (Date.now() < window.cooldowns.lightOfGod) { alert("Свет Бога перезаряжается!"); return; }
         window.cooldowns.lightOfGod = Date.now() + 10000;
-        playSound('god');
-        createFlashEffect(mouseX, mouseY, 200, "#ffffff");
+        playSound('god'); createFlashEffect(mouseX, mouseY, 200, "#ffffff");
         window.flyingViruses.forEach(item => {
-            if (!item.isZombie) {
+            if (!item.isZombie && !item.isLucifer) { // Люцифера Свет Бога не аннигилирует сразу!
                 const r = item.element.getBoundingClientRect();
-                const vX = r.left + r.width/2, vY = r.top + r.height/2;
-                if (Math.sqrt(Math.pow(vX - mouseX, 2) + Math.pow(vY - mouseY, 2)) <= 200) damageVirus(item, item.maxHp);
+                const dist = Math.sqrt(Math.pow((r.left + r.width/2) - mouseX, 2) + Math.pow((r.top + r.height/2) - mouseY, 2));
+                if (dist <= 200) damageVirus(item, item.maxHp);
             }
         });
         return;
@@ -319,12 +406,9 @@ arena.onclick = function(e) {
         if (Date.now() < window.cooldowns.hypnosis) { alert("Гипноз перезаряжается!"); return; }
         if (isVirus) {
             const virusItem = window.flyingViruses.find(item => item.element === targetEl);
-            if (virusItem && !virusItem.isZombie) {
-                window.cooldowns.hypnosis = Date.now() + 10000;
-                playSound('zombie');
-                virusItem.isZombie = true;
-                virusItem.element.style.borderColor = "#00ffaa";
-                virusItem.element.style.color = "#00ffaa";
+            if (virusItem && !virusItem.isZombie && !virusItem.isLucifer) {
+                window.cooldowns.hypnosis = Date.now() + 10000; playSound('zombie');
+                virusItem.isZombie = true; virusItem.element.style.borderColor = "#00ffaa"; virusItem.element.style.color = "#00ffaa";
                 virusItem.element.textContent = `🧟 ZOMBIE [${virusItem.hp}/${virusItem.maxHp} HP]`;
             }
         }
@@ -335,7 +419,6 @@ arena.onclick = function(e) {
         e.stopPropagation();
         const virusItem = window.flyingViruses.find(item => item.element === targetEl);
         if (!virusItem || virusItem.isZombie) return;
-
         if (window.currentWeapon === "laser") { playSound('laser'); damageVirus(virusItem, 100); }
         if (window.currentWeapon === "bomb_default") { playSound('explosion'); damageVirus(virusItem, 200); }
     }
@@ -345,34 +428,32 @@ function damageVirus(item, dmg) {
     item.hp -= dmg;
     if (item.hp <= 0) {
         item.element.remove();
-        let reward = item.isBoss ? (100000 * Math.pow(10, (window.currentRound/10) - 1)) : 100 * window.currentRound;
+        let reward = item.isLucifer ? 50000000 : (item.isBoss ? (10000 * Math.pow(10, (window.currentRound/10) - 1)) : 100 * window.currentRound);
         
-        if (!item.isZombie) {
-            window.score += reward;
-            scoreBoard.textContent = "ОЧКИ: " + window.score;
-            localStorage.setItem("virusGame_score", window.score);
+        if (item.isLucifer) {
+            window.hasLuciferSword = true; localStorage.setItem("virusGame_hasLuciferSword", "true");
+            if (!window.unlockedWeapons.includes("luciferSword")) window.unlockedWeapons.push("luciferSword");
+            alert("🔥 ВЫ ПОБЕДИЛИ ЛЮЦИФЕРА! Меч Люцифера навсегда разблокирован (Клавиша 9)!");
         }
-        
+
+        if (item.isBoss && window.currentRound === 10) {
+            window.firstBossDefeated = true; localStorage.setItem("virusGame_boss1", "true");
+            luciferBox.style.display = "flex";
+        }
+
+        if (!item.isZombie) { window.score += reward; scoreBoard.textContent = "ОЧКИ: " + window.score; localStorage.setItem("virusGame_score", window.score); }
         window.flyingViruses = window.flyingViruses.filter(v => v !== item);
         checkRoundEnd();
     } else {
         if (item.isZombie) item.element.textContent = `🧟 ZOMBIE [${item.hp}/${item.maxHp} HP]`;
+        else if (item.isLucifer) item.element.textContent = `😈 ЛЮЦИФЕР [${item.hp}/${item.maxHp} HP]`;
         else if (item.isBoss) item.element.textContent = `👑 БОСС [${item.hp}/${item.maxHp} HP]`;
         else item.element.textContent = `🦠 TARGET_${item.id} [${item.hp}/${item.maxHp} HP]`;
     }
 }
 
-function createFlashEffect(x, y, radius, color) {
-    const flash = document.createElement("div");
-    flash.style.position = "absolute"; flash.style.left = (x - radius) + "px"; flash.style.top = (y - radius) + "px";
-    flash.style.width = (radius*2) + "px"; flash.style.height = (radius*2) + "px"; flash.style.borderRadius = "50%";
-    flash.style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
-    flash.style.pointerEvents = "none"; flash.style.zIndex = "9997"; arena.appendChild(flash);
-    setTimeout(() => flash.remove(), 400);
-}
-
 // ==========================================
-// 8. СМЕНА ОРУЖИЯ С КЛАВИАТУРЫ И БОМБА НА Q
+// 8. ГОРЯЧИЕ КЛАВИШИ (Q, E, F, R И ЦИФРЫ)
 // ==========================================
 window.onkeydown = function(e) {
     if (e.key === "1") window.currentWeapon = "laser";
@@ -383,11 +464,68 @@ window.onkeydown = function(e) {
     if (e.key === "6" && window.unlockedWeapons.includes("gandalfStaff")) window.currentWeapon = "gandalfStaff";
     if (e.key === "7" && window.unlockedWeapons.includes("godLight")) window.currentWeapon = "godLight";
     if (e.key === "8" && window.unlockedWeapons.includes("hypnosis")) window.currentWeapon = "hypnosis";
+    if (e.key === "9" && window.unlockedWeapons.includes("luciferSword")) window.currentWeapon = "luciferSword";
     
+    // БЕСПЛАТНАЯ ЗАМОРОЗКА НА 5 СЕКУНД (Клавиша E)
+    if (e.key.toLowerCase() === "e" || e.key.toLowerCase() === "у") {
+        if (window.freezesLeft <= 0) return;
+        window.freezesLeft--; updateInterfaceText();
+        playSound('god');
+
+        window.flyingViruses.forEach(v => {
+            v.isFrozen = true; v.element.style.borderColor = "#00ffff"; v.element.style.boxShadow = "0 0 15px #00ffff";
+        });
+
+        setTimeout(() => {
+            window.flyingViruses.forEach(v => {
+                v.isFrozen = false; v.element.style.borderColor = v.isLucifer ? "#ff4500" : (v.isBoss ? "#8a2be2" : "#ff3333");
+                v.element.style.boxShadow = "none";
+            });
+        }, 5000);
+    }
+
+    // СПАВН ОГНЯ МЕЧОМ (Клавиша F)
+    if ((e.key.toLowerCase() === "f" || e.key.toLowerCase() === "а") && window.currentWeapon === "luciferSword") {
+        playSound('fire');
+        const fire = document.createElement("div"); fire.className = "lucifer-fire";
+        fire.style.left = (mouseX - 50) + "px"; fire.style.top = (mouseY - 50) + "px";
+        fire.style.width = "100px"; fire.style.height = "100px"; arena.appendChild(fire);
+
+        const burnInt = setInterval(() => {
+            window.flyingViruses.forEach(item => {
+                const r = item.element.getBoundingClientRect();
+                if (mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) damageVirus(item, 100);
+            });
+        }, 300);
+        setTimeout(() => { clearInterval(burnInt); fire.remove(); }, 3000);
+    }
+
+    // БРОСОК МЕЧА ЛЮЦИФЕРА (Клавиша R)
+    if ((e.key.toLowerCase() === "r" || e.key.toLowerCase() === "к") && window.currentWeapon === "luciferSword") {
+        playSound('laser');
+        const proj = document.createElement("div");
+        proj.style.position = "absolute"; proj.style.left = mouseX + "px"; proj.style.top = mouseY + "px";
+        proj.style.width = "40px"; proj.style.height = "6px"; proj.style.backgroundColor = "#ff4500";
+        proj.style.boxShadow = "0 0 15px #ff4500"; proj.style.zIndex = "9998"; arena.appendChild(proj);
+
+        let pX = mouseX;
+        const projInt = setInterval(() => {
+            pX += 15; proj.style.left = pX + "px";
+            if (pX > window.innerWidth) { clearInterval(projInt); proj.remove(); }
+
+            window.flyingViruses.forEach(item => {
+                const r = item.element.getBoundingClientRect();
+                if (pX >= r.left && pX <= r.right && mouseY >= r.top && mouseY <= r.bottom) {
+                    if (!item.isBurning) { item.isBurning = true; item.burnTicks = 5; }
+                }
+            });
+        }, 16);
+    }
+
+    // БЕСПЛАТНАЯ БОМБА (Клавиша Q)
     if (e.key.toLowerCase() === "q" || e.key.toLowerCase() === "й") {
         if (window.bombsLeft <= 0) return;
-        window.bombsLeft--; updateInterfaceText();
-        playSound('explosion');
+        window.bombsLeft--; updateInterfaceText(); playSound('explosion');
 
         const bombEl = document.createElement("div");
         bombEl.style.position = "absolute"; bombEl.style.left = (mouseX - 25) + "px"; bombEl.style.top = (mouseY - 25) + "px";
@@ -408,8 +546,8 @@ window.onkeydown = function(e) {
                 window.flyingViruses.forEach(item => {
                     if (!item.isZombie) {
                         const rect = item.element.getBoundingClientRect();
-                        const vX = rect.left + rect.width/2, vY = rect.top + rect.height/2;
-                        if (Math.sqrt(Math.pow(vX - bX, 2) + Math.pow(vY - bY, 2)) <= 250) damageVirus(item, 600);
+                        const dist = Math.sqrt(Math.pow((rect.left + rect.width/2) - bX, 2) + Math.pow((rect.top + rect.height/2) - bY, 2));
+                        if (dist <= 250) damageVirus(item, 600);
                     }
                 });
             }
@@ -422,12 +560,11 @@ function checkRoundEnd() {
     if (window.spawnedThisRound >= getMaxViruses() && window.flyingViruses.length === 0) {
         window.currentRound++;
         if ((window.currentRound - 1) % 10 === 0) {
-            const bossIndex = (window.currentRound - 1) / 10;
-            alert(`🎉 НЕВЕРОЯТНО! Вы уничтожили БОССА №${bossIndex}! Начинается РАУНД ${window.currentRound}.`);
+            alert(`🎉 НЕВЕРОЯТНО! Раунд с боссом пройден! Начинается РАУНД ${window.currentRound}.`);
         } else {
             alert(`🎉 Раунд пройден! Начинается РАУНД ${window.currentRound}. Лимит вирусов увеличен до ${getMaxViruses()}!`);
         }
-        window.bombsLeft = 2; window.spawnedThisRound = 0;
+        window.bombsLeft = 2; window.freezesLeft = 2; window.spawnedThisRound = 0;
         roundBoard.textContent = "РАУНД: " + window.currentRound;
         updateSpawnButtonText(); updateInterfaceText();
     }
