@@ -13,7 +13,7 @@
 <body>
 <script>
 // ==========================================
-// 1. ИГРОВЫЕ ПЕРЕМЕННЫЕ И СОХРАНЕНИЯ
+// 1. ИГРОВЫЕ ПЕРЕМЕННЫЕ И УРОВНИ ПРОКАЧКИ
 // ==========================================
 const arena = document.createElement("div");
 arena.style.position = "fixed"; arena.style.top = "0"; arena.style.left = "0";
@@ -26,6 +26,11 @@ window.unlockedWeapons = JSON.parse(localStorage.getItem("virusGame_weapons")) |
 window.hasDarkBlade = localStorage.getItem("virusGame_hasDarkBlade") === "true";
 window.hasLuciferSword = localStorage.getItem("virusGame_hasLuciferSword") === "true";
 window.firstBossDefeated = localStorage.getItem("virusGame_boss1") === "true";
+
+// Хранилище уровней оружия (по умолчанию 1 уровень)
+window.weaponLevels = JSON.parse(localStorage.getItem("virusGame_weaponLevels")) || {
+    laser: 1, bomb_default: 1, brick: 1, poison: 1, darkBlade: 1, gandalfStaff: 1, hypnosis: 1, godLight: 1, luciferSword: 1
+};
 
 if (window.hasDarkBlade && !window.unlockedWeapons.includes("darkBlade")) window.unlockedWeapons.push("darkBlade");
 if (window.hasLuciferSword && !window.unlockedWeapons.includes("luciferSword")) window.unlockedWeapons.push("luciferSword");
@@ -50,7 +55,7 @@ setInterval(() => {
 }, 16);
 
 // ==========================================
-// 2. ИНТЕРФЕЙС И ИНСТРУКЦИЯ ИГРОКА
+// 2. ИНТЕРФЕЙС И ТАБЛО ОЧКОВ
 // ==========================================
 const spawnBtn = document.createElement("button");
 spawnBtn.style.position = "absolute"; spawnBtn.style.top = "20px"; spawnBtn.style.left = "20px";
@@ -65,7 +70,7 @@ function updateSpawnButtonText() {
 }
 updateSpawnButtonText();
 
-const shopBtn = spawnBtn.cloneNode(true); shopBtn.textContent = "МАГАЗИН ОРУЖИЯ"; shopBtn.style.left = "280px"; arena.appendChild(shopBtn);
+const shopBtn = spawnBtn.cloneNode(true); shopBtn.textContent = "МАГАЗИН И ПРОКАЧКА"; shopBtn.style.left = "280px"; arena.appendChild(shopBtn);
 const scoreBoard = document.createElement("div"); scoreBoard.style.position = "absolute"; scoreBoard.style.top = "20px"; scoreBoard.style.right = "20px"; scoreBoard.style.color = "#00ff00"; scoreBoard.style.fontFamily = "monospace"; scoreBoard.style.fontSize = "24px"; scoreBoard.style.fontWeight = "bold"; scoreBoard.style.zIndex = "9999"; scoreBoard.textContent = "ОЧКИ: " + window.score; arena.appendChild(scoreBoard);
 const roundBoard = scoreBoard.cloneNode(true); roundBoard.style.right = "250px"; roundBoard.textContent = "РАУНД: " + window.currentRound; arena.appendChild(roundBoard);
 
@@ -81,32 +86,26 @@ toggleBtn.onclick = (e) => { e.stopPropagation(); toggleInfo(); }; infoHeader.on
 
 function updateInterfaceText() {
     infoTitle.textContent = window.currentRound % 10 === 0 ? `⚠️ РАУНД С БОССОМ ${window.currentRound} ⚠️` : `=== РАУНД ${window.currentRound} ===`;
-    const weaponsMap = { laser: "ЛАЗЕР", bomb_default: "БОМБА (за очки)", brick: "КИРПИЧ", poison: "ОТРАВА", darkBlade: "КЛИНОК ТЕМНОТЫ", gandalfStaff: "ПОСОХ ГЭНДАЛЬФА", godLight: "СВЕТ БОГА", hypnosis: "ГИПНОЗ", luciferSword: "МЕЧ ЛЮЦИФЕРА" };
-    infoContent.textContent = `Оружие [1-9]: ${weaponsMap[window.currentWeapon]} 
+    const weaponsMap = { laser: "ЛАЗЕР", bomb_default: "БОМБА", brick: "КИРПИЧ", poison: "ОТРАВА", darkBlade: "КЛИНОК ТЕМНОТЫ", gandalfStaff: "ПОСОХ ГЭНДАЛЬФА", godLight: "СВЕТ БОГА", hypnosis: "ГИПНОЗ", luciferSword: "МЕЧ ЛЮЦИФЕРА" };
+    const curLvl = window.weaponLevels[window.currentWeapon] || 1;
+    infoContent.textContent = `Текущее оружие: ${weaponsMap[window.currentWeapon]} [Ур. ${curLvl}]
 'Q' - Бесплатная Бомба (${window.bombsLeft}/2) | 'E' - Заморозка врагов на 5с (${window.freezesLeft}/2)
-
-МЕЧ ЛЮЦИФЕРА (Выбор на кнопку 9):
-- Просто водите курсором по вирусам для поджога
-- Клавиша 'F' - Оставить лужу пламени под собой
-- Клавиша 'R' - Выбросить огненный клинок вперед
 
 ХОТКЕИ: 1:Лазер | 2:Бомба | 3:Кирпич | 4:Отрава | 5:Клинок | 6:Посох | 7:Свет Бога | 8:Гипноз | 9:Меч Люцифера`;
 }
 updateInterfaceText();
 
 // ==========================================
-// 3. МАГАЗИН ОРУЖИЯ (СКРОЛЛ КОЛЕСИКОМ)
+// 3. МАГАЗИН ОРУЖИЯ С СИСТЕМОЙ ПРОКАЧКИ ДО 10 УРОВНЯ
 // ==========================================
 const shopWindow = document.createElement("div");
 shopWindow.style.position = "absolute"; shopWindow.style.top = "80px"; shopWindow.style.left = "280px";
-shopWindow.style.width = "360px"; shopWindow.style.maxHeight = "400px"; shopWindow.style.background = "rgba(0,0,0,0.95)";
+shopWindow.style.width = "370px"; shopWindow.style.maxHeight = "400px"; shopWindow.style.background = "rgba(0,0,0,0.95)";
 shopWindow.style.border = "2px solid #00ff00"; shopWindow.style.padding = "15px"; shopWindow.style.fontFamily = "monospace";
 shopWindow.style.color = "#00ff00"; shopWindow.style.display = "none"; shopWindow.style.zIndex = "10000";
 shopWindow.style.overflowY = "auto"; arena.appendChild(shopWindow);
 
-shopBtn.onclick = (e) => { e.stopPropagation(); shopWindow.style.display = shopWindow.style.display === "none" ? "block" : "none"; };
-
-const shopTitle = document.createElement("div"); shopTitle.style.fontWeight = "bold"; shopTitle.style.marginBottom = "15px"; shopTitle.textContent = "=== ОРУЖЕЙНАЯ (СКРОЛЛ ↓) ==="; shopWindow.appendChild(shopTitle);
+const shopTitle = document.createElement("div"); shopTitle.style.fontWeight = "bold"; shopTitle.style.marginBottom = "15px"; shopTitle.textContent = "=== ОРУЖЕЙНАЯ, ПРОКАЧКА И ЛОМБАРД ===";
 
 const luciferBox = document.createElement("div");
 luciferBox.style.border = "2px solid #ff4500"; luciferBox.style.padding = "10px"; luciferBox.style.marginBottom = "15px";
@@ -118,46 +117,103 @@ const luciferDesc = document.createElement("span"); luciferDesc.style.fontSize =
 const luciferCallBtn = document.createElement("button"); luciferCallBtn.style.background = "#300"; luciferCallBtn.style.color = "#ff4500"; luciferCallBtn.style.border = "1px solid #ff4500"; luciferCallBtn.style.cursor = "pointer"; luciferCallBtn.textContent = "ПРИЗВАТЬ НА АРЕНУ";
 
 luciferCallBtn.onclick = (e) => { e.stopPropagation(); shopWindow.style.display = "none"; spawnLucifer(); };
-luciferBox.appendChild(luciferName); luciferBox.appendChild(luciferDesc); luciferBox.appendChild(luciferCallBtn); shopWindow.appendChild(luciferBox);
+luciferBox.appendChild(luciferName); luciferBox.appendChild(luciferDesc); luciferBox.appendChild(luciferCallBtn);
 
+// Список всех пушек, их базовый урон, базовая стоимость и цена улучшения за уровень
 const shopItems = [
-    { id: "brick", name: "Кирпич (300 урона)", cost: 500, desc: "Одиночный бросок тяжелого кирпича.", color: "#cd853f" },
-    { id: "poison", name: "Отрава (Лужа яда)", cost: 1000, desc: "Оставляет лужу, бьющую ядом по 100/сек.", color: "#00ff00" },
-    { id: "darkBlade", name: "Клинок Темноты", cost: 100000, desc: "Разрезает толпы вирусов движением мыши.", color: "#8a2be2" },
-    { id: "gandalfStaff", name: "Посох Гэндальфа", cost: 100000, desc: "Взрыв на 600 урона. Перезарядка 10 сек.", color: "#00ffff" },
-    { id: "hypnosis", name: "Гипноз (Зомби-Вирус)", cost: 100000000, desc: "Обращает вирус против своих. Перезарядка 10 сек.", color: "#00ffaa" },
-    { id: "godLight", name: "Свет Бога (АННИГИЛЯЦИЯ)", cost: 10000000000, desc: "Стирает ВСЁ в зоне. Перезарядка 10 сек.", color: "#fff" }
+    { id: "laser", name: "Лазер", cost: 0, upgradeCost: 1000, desc: "Стартовое оружие клика.", color: "#ff3333" },
+    { id: "bomb_default", name: "Бомба", cost: 200, upgradeCost: 3000, desc: "Клик бьет по площади взрывом.", color: "#ffff00" },
+    { id: "brick", name: "Кирпич", cost: 500, upgradeCost: 5000, desc: "Одиночный бросок тяжелого кирпича.", color: "#cd853f" },
+    { id: "poison", name: "Отрава", cost: 1000, upgradeCost: 8000, desc: "Оставляет лужу, бьющую ядом.", color: "#00ff00" },
+    { id: "darkBlade", name: "Клинок Темноты", cost: 100000, upgradeCost: 50000, desc: "Разрезает толпы вирусов движением мыши.", color: "#8a2be2" },
+    { id: "gandalfStaff", name: "Посох Гэндальфа", cost: 100000, upgradeCost: 150000, desc: "Мега-взрыв. Перезарядка 10 сек.", color: "#00ffff" },
+    { id: "hypnosis", name: "Гипноз", cost: 100000000, upgradeCost: 200000000, desc: "Обращает вирус против своих.", color: "#00ffaa" },
+    { id: "godLight", name: "Свет Бога", cost: 10000000000, upgradeCost: 5000000000, desc: "Стирает всё в зоне.", color: "#fff" },
+    { id: "luciferSword", name: "Меч Люцифера", cost: 0, upgradeCost: 500000000, desc: "Огненные ловушки [F] и бросок [R].", color: "#ff4500" }
 ];
 
-shopItems.forEach(item => {
-    const box = document.createElement("div"); box.style.border = "1px dashed #00ff00"; box.style.padding = "10px"; box.style.marginBottom = "10px"; box.style.display = "flex"; box.style.flexDirection = "column"; box.style.gap = "4px";
-    const name = document.createElement("span"); name.style.color = item.color; name.style.fontWeight = "bold"; name.textContent = item.name;
-    const desc = document.createElement("span"); desc.style.fontSize = "12px"; desc.style.color = "#aaa"; desc.textContent = item.desc;
-    const cost = document.createElement("span"); cost.textContent = `Цена: ${item.cost.toLocaleString()} очков`;
-    const btn = document.createElement("button"); btn.style.background = "#222"; btn.style.color = "#00ff00"; btn.style.border = "1px solid #00ff00"; btn.style.cursor = "pointer";
+function rebuildShopInterface() {
+    while (shopWindow.firstChild) { shopWindow.removeChild(shopWindow.firstChild); }
+    shopWindow.appendChild(shopTitle);
     
-    const isUnlocked = window.unlockedWeapons.includes(item.id);
-    btn.textContent = isUnlocked ? "КУПЛЕНО" : "КУПИТЬ";
-    if (isUnlocked) { btn.style.color = "#555"; btn.style.borderColor = "#555"; }
+    luciferBox.style.display = window.firstBossDefeated ? "flex" : "none";
+    shopWindow.appendChild(luciferBox);
 
-    btn.onclick = (e) => {
-        e.stopPropagation();
-        if (window.unlockedWeapons.includes(item.id)) return;
-        if (window.score >= item.cost) {
-            window.score -= item.cost;
-            window.unlockedWeapons.push(item.id);
-            if (item.id === "darkBlade") { window.hasDarkBlade = true; localStorage.setItem("virusGame_hasDarkBlade", "true"); }
-            scoreBoard.textContent = "ОЧКИ: " + window.score;
-            btn.textContent = "КУПЛЕНО"; btn.style.color = "#555"; btn.style.borderColor = "#555";
-            localStorage.setItem("virusGame_score", window.score);
-            localStorage.setItem("virusGame_weapons", JSON.stringify(window.unlockedWeapons));
-            updateInterfaceText();
-        } else {
-            alert(`Недостаточно очков! Нужно еще ${(item.cost - window.score).toLocaleString()}`);
-        }
-    };
-    box.appendChild(name); box.appendChild(desc); box.appendChild(cost); box.appendChild(btn); shopWindow.appendChild(box);
-});
+    shopItems.forEach(item => {
+        const box = document.createElement("div"); box.style.border = "1px dashed #00ff00"; box.style.padding = "10px"; box.style.marginBottom = "10px"; box.style.display = "flex"; box.style.flexDirection = "column"; box.style.gap = "4px";
+        const lvl = window.weaponLevels[item.id] || 1;
+        const isUnlocked = window.unlockedWeapons.includes(item.id) || item.id === "laser" || (item.id === "luciferSword" && window.hasLuciferSword);
+        
+        const name = document.createElement("span"); name.style.color = item.color; name.style.fontWeight = "bold"; 
+        name.textContent = `${item.name} [Уровень ${lvl}${lvl >= 10 ? " (МАКС)" : ""}]`;
+        
+        const desc = document.createElement("span"); desc.style.fontSize = "11px"; desc.style.color = "#aaa"; desc.textContent = item.desc;
+        
+        // Расчет стоимости апгрейда: базовая цена * текущий уровень
+        const costToUpgrade = item.upgradeCost * lvl;
+        
+        const containerBtns = document.createElement("div"); containerBtns.style.display = "flex"; containerBtns.style.gap = "4px";
+
+        const btnBuy = document.createElement("button"); btnBuy.style.background = "#222"; btnBuy.style.color = "#00ff00"; btnBuy.style.border = "1px solid #00ff00"; btnBuy.style.cursor = "pointer"; btnBuy.style.flex = "1";
+        btnBuy.textContent = isUnlocked ? "КУПЛЕНО" : `КУПИТЬ (${item.cost.toLocaleString()})`;
+        if (isUnlocked) { btnBuy.style.color = "#555"; btnBuy.style.borderColor = "#555"; }
+
+        // КНОПКА ПРОКАЧКИ УРОВНЯ
+        const btnUpgrade = document.createElement("button"); btnUpgrade.style.background = "#113"; btnUpgrade.style.color = "#00ffff"; btnUpgrade.style.border = "1px solid #00ffff"; btnUpgrade.style.cursor = "pointer"; btnUpgrade.style.flex = "1";
+        btnUpgrade.textContent = lvl >= 10 ? "МАКС УРОВЕНЬ" : `УЛУЧШИТЬ (+${costToUpgrade.toLocaleString()})`;
+        btnUpgrade.style.display = isUnlocked && lvl < 10 ? "block" : (lvl >= 10 && isUnlocked ? "block" : "none");
+        if (lvl >= 10) { btnUpgrade.style.color = "#555"; btnUpgrade.style.borderColor = "#555"; }
+
+        // КНОПКА ЛОМБАРДА
+        const btnSell = document.createElement("button"); btnSell.style.background = "#300"; btnSell.style.color = "#ff3333"; btnSell.style.border = "1px solid #ff3333"; btnSell.style.cursor = "pointer";
+        btnSell.textContent = `ПРОДАТЬ В ЛОМБАРД (+${(item.cost / 2).toLocaleString()})`;
+        // Стартовый лазер и трофейный меч Люцифера продать нельзя
+        btnSell.style.display = isUnlocked && item.id !== "laser" && item.id !== "luciferSword" ? "block" : "none";
+
+        btnBuy.onclick = (e) => {
+            e.stopPropagation();
+            if (window.unlockedWeapons.includes(item.id)) return;
+            if (window.score >= item.cost) {
+                window.score -= item.cost; window.unlockedWeapons.push(item.id);
+                if (item.id === "darkBlade") { window.hasDarkBlade = true; localStorage.setItem("virusGame_hasDarkBlade", "true"); }
+                saveAllData(); rebuildShopInterface(); updateInterfaceText();
+            } else { alert("Недостаточно очков!"); }
+        };
+
+        btnUpgrade.onclick = (e) => {
+            e.stopPropagation();
+            if (lvl >= 10) return;
+            if (window.score >= costToUpgrade) {
+                window.score -= costToUpgrade;
+                window.weaponLevels[item.id]++;
+                saveAllData(); rebuildShopInterface(); updateInterfaceText();
+                alert(`Уровень оружия ${item.name} повышен до ${window.weaponLevels[item.id]}! Урон увеличен.`);
+            } else { alert(`Не хватает ${(costToUpgrade - window.score).toLocaleString()} очков для улучшения!`); }
+        };
+
+        btnSell.onclick = (e) => {
+            e.stopPropagation();
+            if (window.currentWeapon === item.id) window.currentWeapon = "laser";
+            window.score += (item.cost / 2);
+            window.unlockedWeapons = window.unlockedWeapons.filter(id => id !== item.id);
+            if (item.id === "darkBlade") { window.hasDarkBlade = false; localStorage.setItem("virusGame_hasDarkBlade", "false"); }
+            saveAllData(); rebuildShopInterface(); updateInterfaceText();
+        };
+
+        box.appendChild(name); box.appendChild(desc); if (!isUnlocked) box.appendChild(cost);
+        containerBtns.appendChild(btnBuy); containerBtns.appendChild(btnUpgrade);
+        box.appendChild(containerBtns); box.appendChild(btnSell); shopWindow.appendChild(box);
+    });
+}
+
+function saveAllData() {
+    scoreBoard.textContent = "ОЧКИ: " + window.score;
+    localStorage.setItem("virusGame_score", window.score);
+    localStorage.setItem("virusGame_weapons", JSON.stringify(window.unlockedWeapons));
+    localStorage.setItem("virusGame_weaponLevels", JSON.stringify(window.weaponLevels));
+}
+
+shopBtn.onclick = (e) => { e.stopPropagation(); if(shopWindow.style.display === "none") { rebuildShopInterface(); shopWindow.style.display = "block"; } else { shopWindow.style.display = "none"; } };
 // ==========================================
 // 4. СИНТЕЗАТОР ЗВУКОВЫХ ЭФФЕКТОВ (БЕЗ ФАЙЛОВ)
 // ==========================================
@@ -280,7 +336,9 @@ setInterval(() => {
         if (item.isBurning && item.burnTicks > 0) {
             item.burnTicks--;
             item.element.style.backgroundColor = "#ff4500";
-            damageVirus(item, 600);
+            // Урон от горения меча Люцифера увеличивается от уровня прокачки
+            const lvl = window.weaponLevels.luciferSword || 1;
+            damageVirus(item, 600 * lvl);
             if (item.burnTicks <= 0) { item.isBurning = false; item.element.style.backgroundColor = "black"; }
         }
     });
@@ -294,7 +352,12 @@ function handleDarkBladeTrace() {
         window.flyingViruses.forEach(item => {
             const r = item.element.getBoundingClientRect();
             if (!item.isZombie && mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) {
-                playSound('laser'); damageVirus(item, 15); 
+                playSound('laser'); 
+                // УРОН КЛИНКА ТЕМНОТЫ: 15 на 1 ур., 50 на 2 ур., и по +30 за каждый ур. дальше
+                const lvl = window.weaponLevels.darkBlade || 1;
+                let darkBladeDamage = 15;
+                if (lvl > 1) darkBladeDamage = 15 + (lvl - 1) * 32; // Около 300 урона за микротик на 10 ур.!
+                damageVirus(item, darkBladeDamage); 
             }
         });
     }
@@ -326,7 +389,9 @@ setInterval(() => {
         normals.forEach(normal => {
             const nR = normal.element.getBoundingClientRect();
             const dist = Math.sqrt(Math.pow((nR.left + nR.width/2) - zX, 2) + Math.pow((nR.top + nR.height/2) - zY, 2));
-            if (dist <= 150) { playSound('zombie'); damageVirus(normal, 100); damageVirus(zombie, 100); }
+            // Урон зомби зависит от его уровня прокачки гипноза
+            const lvl = window.weaponLevels.hypnosis || 1;
+            if (dist <= 150) { playSound('zombie'); damageVirus(normal, 100 * lvl); damageVirus(zombie, 100 * lvl); }
         });
     });
 }, 1000);
@@ -340,9 +405,10 @@ arena.onclick = function(e) {
     
     if (window.currentWeapon === "brick" && window.unlockedWeapons.includes("brick")) {
         playSound('glass'); createFlashEffect(mouseX, mouseY, 40, "#cd853f");
+        const lvl = window.weaponLevels.brick || 1;
         window.flyingViruses.forEach(item => {
             const r = item.element.getBoundingClientRect();
-            if (!item.isZombie && mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) damageVirus(item, 300);
+            if (!item.isZombie && mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) damageVirus(item, 300 * lvl);
         });
         return;
     }
@@ -355,6 +421,7 @@ arena.onclick = function(e) {
         puddle.style.background = "radial-gradient(circle, rgba(0,255,0,0.5) 0%, transparent 70%)";
         puddle.style.pointerEvents = "none"; puddle.style.zIndex = "9991"; arena.appendChild(puddle);
         
+        const lvl = window.weaponLevels.poison || 1;
         const poisonInterval = setInterval(() => {
             if (!arena.contains(puddle)) { clearInterval(poisonInterval); return; }
             const pR = puddle.getBoundingClientRect();
@@ -363,7 +430,7 @@ arena.onclick = function(e) {
                 if (!item.isZombie) {
                     const vR = item.element.getBoundingClientRect();
                     const dist = Math.sqrt(Math.pow((vR.left + vR.width/2) - pX, 2) + Math.pow((vR.top + vR.height/2) - pY, 2));
-                    if (dist <= 70) damageVirus(item, 20);
+                    if (dist <= 70) damageVirus(item, 20 * lvl);
                 }
             });
         }, 1000);
@@ -375,11 +442,12 @@ arena.onclick = function(e) {
         if (Date.now() < window.cooldowns.staff) { alert("Посох перезаряжается!"); return; }
         window.cooldowns.staff = Date.now() + 10000;
         playSound('explosion'); createFlashEffect(mouseX, mouseY, 250, "#00ffff");
+        const lvl = window.weaponLevels.gandalfStaff || 1;
         window.flyingViruses.forEach(item => {
             if (!item.isZombie) {
                 const r = item.element.getBoundingClientRect();
                 const dist = Math.sqrt(Math.pow((r.left + r.width/2) - mouseX, 2) + Math.pow((r.top + r.height/2) - mouseY, 2));
-                if (dist <= 250) damageVirus(item, 600);
+                if (dist <= 250) damageVirus(item, 600 * lvl);
             }
         });
         return;
@@ -416,10 +484,16 @@ arena.onclick = function(e) {
         e.stopPropagation();
         const virusItem = window.flyingViruses.find(item => item.element === targetEl);
         if (!virusItem || virusItem.isZombie) return;
-        if (window.currentWeapon === "laser") { playSound('laser'); damageVirus(virusItem, 100); }
-        if (window.currentWeapon === "bomb_default") { playSound('explosion'); damageVirus(virusItem, 200); }
+        if (window.currentWeapon === "laser") { playSound('laser'); const lvl = window.weaponLevels.laser || 1; damageVirus(virusItem, 100 * lvl); }
+        if (window.currentWeapon === "bomb_default") { playSound('explosion'); const lvl = window.weaponLevels.bomb_default || 1; damageVirus(virusItem, 200 * lvl); }
     }
 };
+
+function jsonSaveGame() {
+    localStorage.setItem("virusGame_score", window.score);
+    localStorage.setItem("virusGame_weapons", JSON.stringify(window.unlockedWeapons));
+    localStorage.setItem("virusGame_weaponLevels", JSON.stringify(window.weaponLevels));
+}
 
 function damageVirus(item, dmg) {
     item.hp -= dmg;
@@ -435,10 +509,9 @@ function damageVirus(item, dmg) {
 
         if (item.isBoss && window.currentRound === 10) {
             window.firstBossDefeated = true; localStorage.setItem("virusGame_boss1", "true");
-            luciferBox.style.display = "flex";
         }
 
-        if (!item.isZombie) { window.score += reward; scoreBoard.textContent = "ОЧКИ: " + window.score; localStorage.setItem("virusGame_score", window.score); }
+        if (!item.isZombie) { window.score += reward; scoreBoard.textContent = "ОЧКИ: " + window.score; jsonSaveGame(); }
         window.flyingViruses = window.flyingViruses.filter(v => v !== item);
         setTimeout(checkRoundEnd, 10);
     } else {
@@ -462,15 +535,15 @@ function createFlashEffect(x, y, radius, color) {
 // 8. ГОРЯЧИЕ КЛАВИШИ И ТАЙМЕРЫ
 // ==========================================
 window.onkeydown = function(e) {
-    if (e.key === "1") window.currentWeapon = "laser";
-    if (e.key === "2") window.currentWeapon = "bomb_default";
-    if (e.key === "3" && window.unlockedWeapons.includes("brick")) window.currentWeapon = "brick";
-    if (e.key === "4" && window.unlockedWeapons.includes("poison")) window.currentWeapon = "poison";
-    if (e.key === "5" && window.unlockedWeapons.includes("darkBlade")) window.currentWeapon = "darkBlade";
-    if (e.key === "6" && window.unlockedWeapons.includes("gandalfStaff")) window.currentWeapon = "gandalfStaff";
-    if (e.key === "7" && window.unlockedWeapons.includes("godLight")) window.currentWeapon = "godLight";
-    if (e.key === "8" && window.unlockedWeapons.includes("hypnosis")) window.currentWeapon = "hypnosis";
-    if (e.key === "9" && window.unlockedWeapons.includes("luciferSword")) window.currentWeapon = "luciferSword";
+    if (e.key === "1") { window.currentWeapon = "laser"; updateInterfaceText(); }
+    if (e.key === "2") { window.currentWeapon = "bomb_default"; updateInterfaceText(); }
+    if (e.key === "3" && window.unlockedWeapons.includes("brick")) { window.currentWeapon = "brick"; updateInterfaceText(); }
+    if (e.key === "4" && window.unlockedWeapons.includes("poison")) { window.currentWeapon = "poison"; updateInterfaceText(); }
+    if (e.key === "5" && window.unlockedWeapons.includes("darkBlade")) { window.currentWeapon = "darkBlade"; updateInterfaceText(); }
+    if (e.key === "6" && window.unlockedWeapons.includes("gandalfStaff")) { window.currentWeapon = "gandalfStaff"; updateInterfaceText(); }
+    if (e.key === "7" && window.unlockedWeapons.includes("godLight")) { window.currentWeapon = "godLight"; updateInterfaceText(); }
+    if (e.key === "8" && window.unlockedWeapons.includes("hypnosis")) { window.currentWeapon = "hypnosis"; updateInterfaceText(); }
+    if (e.key === "9" && window.unlockedWeapons.includes("luciferSword")) { window.currentWeapon = "luciferSword"; updateInterfaceText(); }
     
     if (e.key.toLowerCase() === "e" || e.key.toLowerCase() === "у") {
         if (window.freezesLeft <= 0) return;
@@ -494,11 +567,12 @@ window.onkeydown = function(e) {
         fire.style.left = (mouseX - 50) + "px"; fire.style.top = (mouseY - 50) + "px";
         fire.style.width = "100px"; fire.style.height = "100px"; arena.appendChild(fire);
 
+        const lvl = window.weaponLevels.luciferSword || 1;
         const burnInt = setInterval(() => {
             if (!arena.contains(fire)) { clearInterval(burnInt); return; }
             window.flyingViruses.forEach(item => {
                 const r = item.element.getBoundingClientRect();
-                if (mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) damageVirus(item, 100);
+                if (mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) damageVirus(item, 100 * lvl);
             });
         }, 300);
         setTimeout(() => { clearInterval(burnInt); fire.remove(); }, 3000);
@@ -525,7 +599,6 @@ window.onkeydown = function(e) {
         }, 16);
     }
 
-    // БЕСПЛАТНАЯ БОМБА (Клавиша Q) — НАДЕЖНЫЕ КООРДИНАТЫ ЦЕНТРА
     if (e.key.toLowerCase() === "q" || e.key.toLowerCase() === "й") {
         if (window.bombsLeft <= 0) return;
         window.bombsLeft--; updateInterfaceText(); playSound('explosion');
@@ -564,7 +637,6 @@ window.onkeydown = function(e) {
             }
         }, 1000);
     }
-    updateInterfaceText();
 };
 
 function checkRoundEnd() {
