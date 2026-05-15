@@ -13,7 +13,7 @@
 <body>
 <script>
 // ==========================================
-// 1. ИГРОВЫЕ ПЕРЕМЕННЫЕ И ЗАЩИТА ИНИЦИАЛИЗАЦИИ
+// 1. ИГРОВЫЕ ПЕРЕМЕННЫЕ И ИНИЦИАЛИЗАЦИЯ
 // ==========================================
 const arena = document.createElement("div");
 arena.style.position = "fixed"; arena.style.top = "0"; arena.style.left = "0";
@@ -27,7 +27,6 @@ window.hasDarkBlade = localStorage.getItem("virusGame_hasDarkBlade") === "true";
 window.hasLuciferSword = localStorage.getItem("virusGame_hasLuciferSword") === "true";
 window.firstBossDefeated = localStorage.getItem("virusGame_boss1") === "true";
 
-// Исправлено: Гарантированная защита от пустой памяти уровней оружия
 let savedLevels = localStorage.getItem("virusGame_weaponLevels");
 if (savedLevels && savedLevels !== "undefined") {
     try { window.weaponLevels = JSON.parse(savedLevels); } catch(e) { window.weaponLevels = null; }
@@ -100,7 +99,7 @@ function updateInterfaceText() {
 updateInterfaceText();
 
 // ==========================================
-// 3. МАГАЗИН ОРУЖИЯ С СИСТЕМОЙ ПРОКАЧКИ
+// 3. СТАТИЧНЫЙ МАГАЗИН ОРУЖИЯ (БЕЗ ДИНАМИЧЕСКИХ ПЕРЕСБОРОК)
 // ==========================================
 const shopWindow = document.createElement("div");
 shopWindow.style.position = "absolute"; shopWindow.style.top = "80px"; shopWindow.style.left = "280px";
@@ -110,6 +109,7 @@ shopWindow.style.color = "#00ff00"; shopWindow.style.display = "none"; shopWindo
 shopWindow.style.overflowY = "auto"; arena.appendChild(shopWindow);
 
 const shopTitle = document.createElement("div"); shopTitle.style.fontWeight = "bold"; shopTitle.style.marginBottom = "15px"; shopTitle.textContent = "=== ОРУЖЕЙНАЯ, ПРОКАЧКА И ЛОМБАРД ===";
+shopWindow.appendChild(shopTitle);
 
 const luciferBox = document.createElement("div");
 luciferBox.style.border = "2px solid #ff4500"; luciferBox.style.padding = "10px"; luciferBox.style.marginBottom = "15px";
@@ -122,6 +122,7 @@ const luciferCallBtn = document.createElement("button"); luciferCallBtn.style.ba
 
 luciferCallBtn.onclick = (e) => { e.stopPropagation(); shopWindow.style.display = "none"; spawnLucifer(); };
 luciferBox.appendChild(luciferName); luciferBox.appendChild(luciferDesc); luciferBox.appendChild(luciferCallBtn);
+shopWindow.appendChild(luciferBox);
 
 const shopItems = [
     { id: "laser", name: "Лазер", cost: 0, upgradeCost: 1000, desc: "Стартовое оружие клика.", color: "#ff3333" },
@@ -135,72 +136,81 @@ const shopItems = [
     { id: "luciferSword", name: "Меч Люцифера", cost: 0, upgradeCost: 500000000, desc: "Огненные ловушки [F] и бросок [R].", color: "#ff4500" }
 ];
 
-function rebuildShopInterface() {
-    while (shopWindow.firstChild) { shopWindow.removeChild(shopWindow.firstChild); }
-    shopWindow.appendChild(shopTitle);
-    
-    luciferBox.style.display = window.firstBossDefeated ? "flex" : "none";
-    shopWindow.appendChild(luciferBox);
+// Объект для быстрого обновления текста и кнопок без пересборки структуры DOM
+window.domShopElements = {};
 
+shopItems.forEach(item => {
+    const box = document.createElement("div"); box.style.border = "1px dashed #00ff00"; box.style.padding = "10px"; box.style.marginBottom = "10px"; box.style.display = "flex"; box.style.flexDirection = "column"; box.style.gap = "4px";
+    
+    const nameSpan = document.createElement("span"); nameSpan.style.color = item.color; nameSpan.style.fontWeight = "bold";
+    const descSpan = document.createElement("span"); descSpan.style.fontSize = "11px"; descSpan.style.color = "#aaa"; descSpan.textContent = item.desc;
+    
+    const containerBtns = document.createElement("div"); containerBtns.style.display = "flex"; containerBtns.style.gap = "4px";
+    const btnBuy = document.createElement("button"); btnBuy.style.background = "#222"; btnBuy.style.color = "#00ff00"; btnBuy.style.border = "1px solid #00ff00"; btnBuy.style.cursor = "pointer"; btnBuy.style.flex = "1";
+    const btnUpgrade = document.createElement("button"); btnUpgrade.style.background = "#113"; btnUpgrade.style.color = "#00ffff"; btnUpgrade.style.border = "1px solid #00ffff"; btnUpgrade.style.cursor = "pointer"; btnUpgrade.style.flex = "1";
+    const btnSell = document.createElement("button"); btnSell.style.background = "#300"; btnSell.style.color = "#ff3333"; btnSell.style.border = "1px solid #ff3333"; btnSell.style.cursor = "pointer";
+
+    btnBuy.onclick = (e) => {
+        e.stopPropagation();
+        if (window.unlockedWeapons.includes(item.id)) return;
+        if (window.score >= item.cost) {
+            window.score -= item.cost; window.unlockedWeapons.push(item.id);
+            if (item.id === "darkBlade") { window.hasDarkBlade = true; localStorage.setItem("virusGame_hasDarkBlade", "true"); }
+            saveAllData(); updateShopValues(); updateInterfaceText();
+        } else { alert("Недостаточно очков!"); }
+    };
+
+    btnUpgrade.onclick = (e) => {
+        e.stopPropagation();
+        const lvl = window.weaponLevels[item.id] || 1;
+        if (lvl >= 10) return;
+        const costToUpgrade = item.upgradeCost * lvl;
+        if (window.score >= costToUpgrade) {
+            window.score -= costToUpgrade; window.weaponLevels[item.id]++;
+            saveAllData(); updateShopValues(); updateInterfaceText();
+            alert(`Уровень повышен до ${window.weaponLevels[item.id]}!`);
+        } else { alert(`Не хватает ${(costToUpgrade - window.score).toLocaleString()} очков!`); }
+    };
+
+    btnSell.onclick = (e) => {
+        e.stopPropagation();
+        if (window.currentWeapon === item.id) window.currentWeapon = "laser";
+        window.score += (item.cost / 2);
+        window.unlockedWeapons = window.unlockedWeapons.filter(id => id !== item.id);
+        if (item.id === "darkBlade") { window.hasDarkBlade = false; localStorage.setItem("virusGame_hasDarkBlade", "false"); }
+        saveAllData(); updateShopValues(); updateInterfaceText();
+    };
+
+    containerBtns.appendChild(btnBuy); containerBtns.appendChild(btnUpgrade);
+    box.appendChild(nameSpan); box.appendChild(descSpan); box.appendChild(containerBtns); box.appendChild(btnSell);
+    shopWindow.appendChild(box);
+
+    // Запоминаем элементы для реактивного изменения текста
+    window.domShopElements[item.id] = { nameSpan, btnBuy, btnUpgrade, btnSell, data: item };
+});
+
+function updateShopValues() {
+    luciferBox.style.display = window.firstBossDefeated ? "flex" : "none";
+    
     shopItems.forEach(item => {
-        const box = document.createElement("div"); box.style.border = "1px dashed #00ff00"; box.style.padding = "10px"; box.style.marginBottom = "10px"; box.style.display = "flex"; box.style.flexDirection = "column"; box.style.gap = "4px";
+        const ui = window.domShopElements[item.id];
         const lvl = window.weaponLevels[item.id] || 1;
         const isUnlocked = window.unlockedWeapons.includes(item.id) || item.id === "laser" || (item.id === "luciferSword" && window.hasLuciferSword);
         
-        const name = document.createElement("span"); name.style.color = item.color; name.style.fontWeight = "bold"; 
-        name.textContent = `${item.name} [Уровень ${lvl}${lvl >= 10 ? " (МАКС)" : ""}]`;
+        ui.nameSpan.textContent = `${ui.data.name} [Уровень ${lvl}${lvl >= 10 ? " (МАКС)" : ""}]`;
         
-        const desc = document.createElement("span"); desc.style.fontSize = "11px"; desc.style.color = "#aaa"; desc.textContent = item.desc;
-        const costToUpgrade = item.upgradeCost * lvl;
-        
-        const containerBtns = document.createElement("div"); containerBtns.style.display = "flex"; containerBtns.style.gap = "4px";
+        ui.btnBuy.textContent = isUnlocked ? "КУПЛЕНО" : `КУПИТЬ (${ui.data.cost.toLocaleString()})`;
+        ui.btnBuy.style.color = isUnlocked ? "#555" : "#00ff00";
+        ui.btnBuy.style.borderColor = isUnlocked ? "#555" : "#00ff00";
 
-        const btnBuy = document.createElement("button"); btnBuy.style.background = "#222"; btnBuy.style.color = "#00ff00"; btnBuy.style.border = "1px solid #00ff00"; btnBuy.style.cursor = "pointer"; btnBuy.style.flex = "1";
-        btnBuy.textContent = isUnlocked ? "КУПЛЕНО" : `КУПИТЬ (${item.cost.toLocaleString()})`;
-        if (isUnlocked) { btnBuy.style.color = "#555"; btnBuy.style.borderColor = "#555"; }
+        const costToUpgrade = ui.data.upgradeCost * lvl;
+        ui.btnUpgrade.textContent = lvl >= 10 ? "МАКС УРОВЕНЬ" : `УЛУЧШИТЬ (+${costToUpgrade.toLocaleString()})`;
+        ui.btnUpgrade.style.display = isUnlocked ? "block" : "none";
+        ui.btnUpgrade.style.color = lvl >= 10 ? "#555" : "#00ffff";
+        ui.btnUpgrade.style.borderColor = lvl >= 10 ? "#555" : "#00ffff";
 
-        const btnUpgrade = document.createElement("button"); btnUpgrade.style.background = "#113"; btnUpgrade.style.color = "#00ffff"; btnUpgrade.style.border = "1px solid #00ffff"; btnUpgrade.style.cursor = "pointer"; btnUpgrade.style.flex = "1";
-        btnUpgrade.textContent = lvl >= 10 ? "МАКС УРОВЕНЬ" : `УЛУЧШИТЬ (+${costToUpgrade.toLocaleString()})`;
-        btnUpgrade.style.display = isUnlocked ? "block" : "none";
-        if (lvl >= 10) { btnUpgrade.style.color = "#555"; btnUpgrade.style.borderColor = "#555"; }
-
-        const btnSell = document.createElement("button"); btnSell.style.background = "#300"; btnSell.style.color = "#ff3333"; btnSell.style.border = "1px solid #ff3333"; btnSell.style.cursor = "pointer";
-        btnSell.textContent = `ПРОДАТЬ В ЛОМБАРД (+${(item.cost / 2).toLocaleString()})`;
-        btnSell.style.display = isUnlocked && item.id !== "laser" && item.id !== "luciferSword" ? "block" : "none";
-
-        btnBuy.onclick = (e) => {
-            e.stopPropagation();
-            if (window.unlockedWeapons.includes(item.id)) return;
-            if (window.score >= item.cost) {
-                window.score -= item.cost; window.unlockedWeapons.push(item.id);
-                if (item.id === "darkBlade") { window.hasDarkBlade = true; localStorage.setItem("virusGame_hasDarkBlade", "true"); }
-                saveAllData(); rebuildShopInterface(); updateInterfaceText();
-            } else { alert("Недостаточно очков!"); }
-        };
-
-        btnUpgrade.onclick = (e) => {
-            e.stopPropagation();
-            if (lvl >= 10) return;
-            if (window.score >= costToUpgrade) {
-                window.score -= costToUpgrade;
-                window.weaponLevels[item.id]++;
-                saveAllData(); rebuildShopInterface(); updateInterfaceText();
-                alert(`Уровень оружия ${item.name} повышен до ${window.weaponLevels[item.id]}!`);
-            } else { alert(`Не хватает ${(costToUpgrade - window.score).toLocaleString()} очков!`); }
-        };
-
-        btnSell.onclick = (e) => {
-            e.stopPropagation();
-            if (window.currentWeapon === item.id) window.currentWeapon = "laser";
-            window.score += (item.cost / 2);
-            window.unlockedWeapons = window.unlockedWeapons.filter(id => id !== item.id);
-            if (item.id === "darkBlade") { window.hasDarkBlade = false; localStorage.setItem("virusGame_hasDarkBlade", "false"); }
-            saveAllData(); rebuildShopInterface(); updateInterfaceText();
-        };
-
-        box.appendChild(name); box.appendChild(desc); 
-        containerBtns.appendChild(btnBuy); containerBtns.appendChild(btnUpgrade);
-        box.appendChild(containerBtns); box.appendChild(btnSell); shopWindow.appendChild(box);
+        ui.btnSell.style.display = isUnlocked && item.id !== "laser" && item.id !== "luciferSword" ? "block" : "none";
+        ui.btnSell.textContent = `ПРОДАТЬ В ЛОМБАРД (+${(ui.data.cost / 2).toLocaleString()})`;
     });
 }
 
@@ -210,7 +220,9 @@ function saveAllData() {
     localStorage.setItem("virusGame_weapons", JSON.stringify(window.unlockedWeapons));
     localStorage.setItem("virusGame_weaponLevels", JSON.stringify(window.weaponLevels));
 }
-shopBtn.onclick = (e) => { e.stopPropagation(); if(shopWindow.style.display === "none") { rebuildShopInterface(); shopWindow.style.display = "block"; } else { shopWindow.style.display = "none"; } };
+
+shopBtn.onclick = (e) => { e.stopPropagation(); if(shopWindow.style.display === "none") { updateShopValues(); shopWindow.style.display = "block"; } else { shopWindow.style.display = "none"; } };
+updateShopValues();
 // ==========================================
 // 4. СИНТЕЗАТОР ЗВУКОВЫХ ЭФФЕКТОВ (БЕЗ ФАЙЛОВ)
 // ==========================================
