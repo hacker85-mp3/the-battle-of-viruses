@@ -44,7 +44,6 @@ arena.onmousemove = (e) => {
     handleLuciferTrace();
 };
 
-// Плавное сглаживание движения курсора для эффекта замедления огнем
 setInterval(() => {
     mouseX += (realMouseX - mouseX) * (0.2 * window.cursorSpeedMultiplier);
     mouseY += (realMouseY - mouseY) * (0.2 * window.cursorSpeedMultiplier);
@@ -126,8 +125,8 @@ const shopItems = [
     { id: "poison", name: "Отрава (Лужа яда)", cost: 1000, desc: "Оставляет лужу, бьющую ядом по 100/сек.", color: "#00ff00" },
     { id: "darkBlade", name: "Клинок Темноты", cost: 100000, desc: "Разрезает толпы вирусов движением мыши.", color: "#8a2be2" },
     { id: "gandalfStaff", name: "Посох Гэндальфа", cost: 100000, desc: "Взрыв на 600 урона. Перезарядка 10 сек.", color: "#00ffff" },
-    { id: "godLight", name: "Свет Бога (АННИГИЛЯЦИЯ)", cost: 100000000, desc: "Стирает ВСЁ в зоне. Перезарядка 10 сек.", color: "#fff" },
-    { id: "hypnosis", name: "Гипноз (Зомби-Вирус)", cost: 10000000000, desc: "Обращает вирус против своих. Перезарядка 10 сек.", color: "#00ffaa" }
+    { id: "hypnosis", name: "Гипноз (Зомби-Вирус)", cost: 100000000, desc: "Обращает вирус против своих. Перезарядка 10 сек.", color: "#00ffaa" },
+    { id: "godLight", name: "Свет Бога (АННИГИЛЯЦИЯ)", cost: 10000000000, desc: "Стирает ВСЁ в зоне. Перезарядка 10 сек.", color: "#fff" }
 ];
 
 shopItems.forEach(item => {
@@ -526,6 +525,7 @@ window.onkeydown = function(e) {
         }, 16);
     }
 
+    // БЕСПЛАТНАЯ БОМБА (Клавиша Q) — НАДЕЖНЫЕ КООРДИНАТЫ ЦЕНТРА
     if (e.key.toLowerCase() === "q" || e.key.toLowerCase() === "й") {
         if (window.bombsLeft <= 0) return;
         window.bombsLeft--; updateInterfaceText(); playSound('explosion');
@@ -543,14 +543,21 @@ window.onkeydown = function(e) {
             timeLeft--; bombEl.textContent = timeLeft;
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                const bX = parseFloat(bombEl.style.left) + 25;
-                const bY = parseFloat(bombEl.style.top) + 25;
-                createFlashEffect(bX, bY, 250, "orange"); bombEl.remove();
+                
+                const bombRect = bombEl.getBoundingClientRect();
+                const bX = bombRect.left + bombRect.width / 2;
+                const bY = bombRect.top + bombRect.height / 2;
+                
+                createFlashEffect(bX, bY, 250, "orange"); 
+                bombEl.remove();
 
                 window.flyingViruses.forEach(item => {
                     if (!item.isZombie) {
                         const rect = item.element.getBoundingClientRect();
-                        const dist = Math.sqrt(Math.pow((rect.left + rect.width/2) - bX, 2) + Math.pow((rect.top + rect.height/2) - bY, 2));
+                        const vX = rect.left + rect.width / 2;
+                        const vY = rect.top + rect.height / 2;
+                        
+                        const dist = Math.sqrt(Math.pow(vX - bX, 2) + Math.pow(vY - bY, 2));
                         if (dist <= 250) damageVirus(item, 600);
                     }
                 });
