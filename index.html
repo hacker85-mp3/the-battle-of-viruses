@@ -485,19 +485,54 @@ setInterval(() => {
     });
 }, 1000);
 
-arena.onclick = function(e) {
-    const t = e.target;
-    const n = t && t.textContent && (t.textContent.includes("TARGET") || t.textContent.includes("БОСС") || t.textContent.includes("ZOMBIE") || t.textContent.includes("ЛЮЦИФЕР") || t.textContent.includes("ШПИОН") || t.textContent.includes("ДОКТОР") || t.textContent.includes("МУТАНТ") || t.textContent.includes("ГАЗАН") || t.textContent.includes("ЧЕЛОВЕК") || t.textContent.includes("СИГМА") || t.textContent.includes("ВЕЙДЕР") || t.textContent.includes("САУРОН") || t.textContent.includes("РОБОТ") || t.textContent.includes("ОРК"));
-    let lvl = window.weaponLevels[window.currentWeapon] || 1;
+arena.onclick = (e) => {
+    const t = e.target; 
+    const n = t && t.textContent && t.textContent.includes("HP"); 
+    let g = window.weaponLevels[window.currentWeapon] || 1;
     
-    if (n && window.musicianStatus && Math.random() < 0.465) {
-        const w = document.createElement("div"); w.className = "sound-wave"; w.style.left = mouseX + "px"; w.style.top = mouseY + "px"; arena.appendChild(w); setTimeout(() => w.remove(), 800);
-        window.flyingViruses.forEach(item => {
-            if (Math.sqrt(Math.pow(item.x - mouseX, 2) + Math.pow(item.y - mouseY, 2)) <= 300) {
-                item.isFrozen = true; item.element.style.borderColor = "#00ffff"; setTimeout(() => { item.isFrozen = false; item.element.style.borderColor = "#ff3333"; }, 3000); damageVirus(item, 100);
-            }
-        });
+    if (n) {
+        e.stopPropagation(); 
+        const a = window.flyingViruses.find(v => v.element === t); 
+        if (!a) return;
+        
+        // Саурон защищен, пока кольцо не в вулкане
+        if (a.type === "sauron") { alert("Саурон неуязвим для оружия! Затолкните Кольцо в вулкан!"); return; }
+        
+        // Базовая система урона (Мутанты теперь гарантированно получают урон!)
+        let o = 100;
+        if (window.currentWeapon === "laser") o = 100;
+        else if (window.currentWeapon === "bomb_default") o = 200;
+        else if (window.currentWeapon === "saber") o = 1;
+        else if (window.currentWeapon === "human_gun") o = 600;
+        else if (window.currentWeapon === "human_axe") o = 400;
+        else if (window.currentWeapon === "vader_saber") o = 800;
+        else if (window.currentWeapon === "sauron_yatagan") o = 500;
+        else if (window.currentWeapon === "shocker") o = 150;
+
+        o *= g; // Умножаем на уровень оружия
+        
+        // Шанс 10% на КРИТ х3 для клинков, топоров и кирпичей
+        const chanceWeapons = ["brick", "saber", "darkBlade", "luciferSword", "human_axe", "vader_saber", "sauron_yatagan"];
+        if (chanceWeapons.includes(window.currentWeapon) && Math.random() < 0.1) {
+            o *= 3;
+        }
+        
+        // Применяем множители ауры (Темная х2) и статусов (Сигма х6, Оби-Ван х6)
+        let finalDmg = o * getAuraMult() * getStatusMult(window.currentWeapon);
+        
+        if (window.currentWeapon === "bomb_default") {
+            const rect = t.getBoundingClientRect(); 
+            window.flyingViruses.forEach(virusObj => { 
+                if (Math.sqrt(Math.pow(virusObj.x - rect.left, 2) + Math.pow(virusObj.y - rect.top, 2)) <= 150) {
+                    damageVirus(virusObj, finalDmg); 
+                } 
+            });
+        } else {
+            damageVirus(a, finalDmg);
+        }
     }
+};
+
 
     if (window.currentWeapon === "shocker") {
         if (Date.now() < window.cooldowns.shocker) { alert("Шокер КД!"); return; }
