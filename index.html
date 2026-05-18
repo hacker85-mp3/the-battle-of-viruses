@@ -5,13 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Арена Вирусов: Эволюция Боссов</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; user-select: none; font-family: monospace; color: #00ff00; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; user-select: none; font-family: 'Courier New', monospace; color: #00ff00; }
         .lucifer-fire { position: absolute; background: radial-gradient(circle, #ff4500 0%, transparent 70%); pointer-events: none; z-index: 9991; animation: burn 0.5s infinite alternate; }
         .sound-wave { position: absolute; border: 4px double #00ffff; border-radius: 50%; pointer-events: none; z-index: 9992; animation: wave 0.8s linear forwards; }
-        .volcano { position: absolute; bottom: 20px; right: 20px; width: 120px; height: 100px; background: linear-gradient(to top, #333, #555); clip-path: polygon(20% 100%, 40% 30%, 60% 30%, 80% 100%); border-top: 15px solid red; z-index: 9991; display: none; text-align: center; color: white; font-weight: bold; line-height: 140px; box-shadow: 0 0 30px red; }
-        .game-wall { position: absolute; width: 15px; height: 120px; background: #00ffea; border: 1px solid #fff; box-shadow: 0 0 15px #00ffea; z-index: 9993; }
-        .boss-btn { background: black; color: #ff3300; border: 1px solid #ff3300; padding: 4px 8px; cursor: pointer; font-weight: bold; font-family: monospace; margin: 2px; }
-        .w-btn { background: #111; color: #00ff00; border: 1px solid #00ff00; padding: 4px 8px; cursor: pointer; font-family: monospace; margin: 2px; }
+        .volcano { position: absolute; bottom: 40px; right: 40px; width: 200px; height: 160px; background: linear-gradient(to top, #222, #444); clip-path: polygon(20% 100%, 40% 30%, 60% 30%, 80% 100%); border-top: 25px solid red; z-index: 9991; display: none; text-align: center; color: white; font-weight: bold; font-size: 20px; line-height: 240px; box-shadow: 0 0 50px red; }
+        .game-wall { position: absolute; width: 20px; height: 150px; background: #00ffea; border: 2px solid #fff; box-shadow: 0 0 25px #00ffea; z-index: 9993; }
+        
+        /* УВЕЛИЧЕННЫЙ ИГРОВОЙ ИНТЕРФЕЙС */
+        .game-panel { position: absolute; top: 0; left: 0; width: 100vw; background: rgba(0, 15, 0, 0.95); border-bottom: 4px solid #00ff00; box-shadow: 0 5px 25px rgba(0, 255, 0, 0.3); padding: 20px; box-sizing: border-box; z-index: 9999; display: flex; flex-direction: column; gap: 15px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); font-size: 24px; font-weight: bold; border-bottom: 2px dashed #00ff00; padding-bottom: 10px; text-shadow: 0 0 10px #00ff00; }
+        .loot-line { font-size: 18px; color: #00ffaa; font-weight: bold; }
+        .hotkeys-line { font-size: 16px; color: #888; }
+        .controls-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        
+        /* КРУПНЫЕ КНОПКИ */
+        .main-btn { padding: 12px 24px; background: #003300; color: #00ff00; border: 2px solid #00ff00; font-size: 18px; font-weight: bold; font-family: monospace; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,0,0.5); transition: 0.2s; }
+        .main-btn:hover { background: #00ff00; color: black; box-shadow: 0 0 20px #00ff00; }
+        .boss-btn { background: #200; color: #ff3300; border: 2px solid #ff3300; padding: 10px 18px; cursor: pointer; font-weight: bold; font-size: 16px; font-family: monospace; box-shadow: 0 0 8px rgba(255,51,0,0.4); transition: 0.2s; }
+        .boss-btn:hover { background: #ff3300; color: white; box-shadow: 0 0 18px #ff3300; }
+        .w-btn { background: #111; color: #00ff00; border: 2px solid #00ff00; padding: 10px 16px; cursor: pointer; font-size: 15px; font-family: monospace; font-weight: bold; transition: 0.2s; }
+        .w-btn:hover { background: #00ff00; color: black; }
+        .select-style { background: black; color: #00ff00; border: 2px solid #00ff00; padding: 10px; font-size: 16px; font-weight: bold; font-family: monospace; cursor: pointer; }
+        
         @keyframes burn { from { transform: scale(1); opacity: 0.6; } to { transform: scale(1.2); opacity: 0.9; } }
         @keyframes wave { from { transform: scale(0.1); opacity: 1; } to { transform: scale(3); opacity: 0; } }
     </style>
@@ -19,9 +34,9 @@
 <body>
 <div id="volcanoEl" class="volcano">ВУЛКАН</div>
 <script>
-const arena = document.createElement("div"); arena.style.position = "fixed"; arena.style.top = "0"; arena.style.left = "0"; arena.style.width = "100vw"; arena.style.height = "100vh"; arena.style.backgroundColor = "black"; arena.style.zIndex = "9990"; arena.style.overflow = "hidden"; document.body.appendChild(arena);
+const arena = document.createElement("div"); arena.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:black;z-index:9990;overflow:hidden;"; document.body.appendChild(arena);
 
-window.currentRound = 1; // Раунд всегда 1 при входе
+window.currentRound = 1; 
 window.score = parseInt(localStorage.getItem("vGame_brelers")) || 0;
 window.gameDifficulty = localStorage.getItem("vGame_diff") || "easy";
 window.chosenAura = localStorage.getItem("vGame_aura") || "none";
@@ -33,7 +48,12 @@ window.zombieSettings = JSON.parse(localStorage.getItem("vGame_zombieSettings"))
 window.favoriteWeapons = JSON.parse(localStorage.getItem("vGame_favorites")) || [];
 window.unlockedWeapons = JSON.parse(localStorage.getItem("vGame_weapons")) || ["laser", "bomb_default", "brick", "saber"];
 window.weaponLevels = JSON.parse(localStorage.getItem("vGame_levels")) || { laser:1, bomb_default:1, brick:1, darkBlade:1, luciferSword:1, saber:1, shocker:1, human_gun:1, human_axe:1, vader_saber:1, sauron_yatagan:1 };
+
+// Баг-фикс: Исправлена инициализация лута, чтобы не было значений undefined
 window.loot = JSON.parse(localStorage.getItem("vGame_loot")) || { luc_wings:0, luc_dna:0, luc_crown:0, human_armor:0, vader_mask:0, vader_cloak:0, sauron_wall:0 };
+if (!window.loot.vader_cloak) window.loot.vader_cloak = 0;
+if (!window.loot.sauron_wall) window.loot.sauron_wall = 0;
+if (!window.loot.luc_crown) window.loot.luc_crown = 0;
 
 window.currentWeapon = "laser"; window.flyingViruses = []; window.gameWalls = [];
 window.bombsLeft = 2; window.freezesLeft = 2; window.spawnedThisRound = 0;
@@ -50,20 +70,31 @@ function getDiffStats() {
     return { speed: 1, hp: 1, cash: 1 };
 }
 
-const topBar = document.createElement("div"); topBar.style = "position:absolute;top:15px;left:20px;display:flex;flex-direction:column;gap:6px;z-index:9999;background:rgba(0,0,0,0.8);padding:10px;border:1px solid #00ff00;"; arena.appendChild(topBar);
-const statsLine = document.createElement("div"); topBar.appendChild(statsLine);
-const btnLine = document.createElement("div"); topBar.appendChild(btnLine);
-const spawnBtn = document.createElement("button"); spawnBtn.style = "padding:6px;background:black;color:#00ff00;border:1px solid #00ff00;cursor:pointer;font-weight:bold;"; btnLine.appendChild(spawnBtn);
+// НОВАЯ МАССИВНАЯ КРАСИВАЯ ПАНЕЛЬ
+const gamePanel = document.createElement("div"); gamePanel.className = "game-panel"; arena.appendChild(gamePanel);
 
-const diffSelect = document.createElement("select"); diffSelect.style = "background:black;color:#00ff00;border:1px solid #00ff00;padding:4px;margin-left:6px;";
+const statsGrid = document.createElement("div"); statsGrid.className = "stats-grid"; gamePanel.appendChild(statsGrid);
+const brelersStat = document.createElement("span"); statsGrid.appendChild(brelersStat);
+const roundStat = document.createElement("span"); statsGrid.appendChild(roundStat);
+const auraStat = document.createElement("span"); statsGrid.appendChild(auraStat);
+
+const lootLine = document.createElement("div"); lootLine.className = "loot-line"; gamePanel.appendChild(lootLine);
+const hotkeysLine = document.createElement("div"); hotkeysLine.className = "hotkeys-line"; gamePanel.appendChild(hotkeysLine);
+
+const controlsRow = document.createElement("div"); controlsRow.className = "controls-row"; gamePanel.appendChild(controlsRow);
+const spawnBtn = document.createElement("button"); spawnBtn.className = "main-btn"; controlsRow.appendChild(spawnBtn);
+
+const diffSelect = document.createElement("select"); diffSelect.className = "select-style";
 const modes = { easy: "Легкий (x1)", medium: "Средний (x1.5)", hard: "Сложный (x2)", extreme: "Экстремальный (x5)" };
 for (let m in modes) { const opt = document.createElement("option"); opt.value = m; opt.textContent = modes[m]; if(m === window.gameDifficulty) opt.selected = true; diffSelect.appendChild(opt); }
 diffSelect.onchange = () => { window.gameDifficulty = diffSelect.value; localStorage.setItem("vGame_diff", window.gameDifficulty); updateInterfaceText(); };
-btnLine.appendChild(diffSelect);
+controlsRow.appendChild(diffSelect);
 
-const panelLine = document.createElement("div"); panelLine.style.marginTop = "6px"; topBar.appendChild(panelLine);
+const bossLine = document.createElement("div"); bossLine.style.display = "flex"; bossLine.style.gap = "8px"; gamePanel.appendChild(bossLine);
+const weaponLine = document.createElement("div"); weaponLine.style.display = "flex"; weaponLine.style.gap = "6px"; weaponLine.style.flexWrap = "wrap"; gamePanel.appendChild(weaponLine);
+
 function renderControls() {
-    panelLine.innerHTML = "";
+    bossLine.innerHTML = ""; weaponLine.innerHTML = "";
     const bConfig = [
         { name: "👨 Человек", act: () => createVirusElement(500, true, false, "human") },
         { name: "🗿 Сигма", act: () => createVirusElement(1000000, true, false, "sigma") },
@@ -71,26 +102,29 @@ function renderControls() {
         { name: "🌌 Вейдер", act: () => { if(window.obiWanStatus) createVirusElement(1000000000000, true, false, "vader"); else alert("Нужен статус Оби-Ван!"); } },
         { name: "🌋 Саурон", act: () => spawnSauronFight() }
     ];
-    bConfig.forEach(b => { const btn = document.createElement("button"); btn.className = "boss-btn"; btn.textContent = b.name; btn.onclick = b.act; panelLine.appendChild(btn); });
+    bConfig.forEach(b => { const btn = document.createElement("button"); btn.className = "boss-btn"; btn.textContent = b.name; btn.onclick = b.act; bossLine.appendChild(btn); });
     
-    panelLine.appendChild(document.createElement("br"));
     window.unlockedWeapons.forEach(w => {
-        const btn = document.createElement("button"); btn.className = "w-btn"; btn.textContent = w + (window.favoriteWeapons.includes(w) ? " ⭐" : "");
-        if(window.currentWeapon === w) btn.style.borderColor = "#fff";
+        const btn = document.createElement("button"); btn.className = "w-btn"; btn.textContent = w.toUpperCase() + (window.favoriteWeapons.includes(w) ? " ⭐" : "");
+        if(window.currentWeapon === w) { btn.style.backgroundColor = "#00ff00"; btn.style.color = "black"; }
         btn.onclick = () => { window.currentWeapon = w; updateInterfaceText(); renderControls(); };
-        panelLine.appendChild(btn);
+        weaponLine.appendChild(btn);
     });
 }
 
 function getMaxViruses() { return window.currentRound % 10 === 0 ? 1 : window.currentRound; }
-function updateSpawnButtonText() { spawnBtn.textContent = window.currentRound % 10 === 0 ? "ПРИЗВАТЬ БОССА РАУНДА" : `СПАВН ВИРУСА (${window.spawnedThisRound}/${getMaxViruses()})`; }
+function updateSpawnButtonText() { spawnBtn.textContent = window.currentRound % 10 === 0 ? "⚠️ ПРИЗВАТЬ БОССА РАУНДА" : `🦠 СПАВН ВИРУСА (${window.spawnedThisRound}/${getMaxViruses()})`; }
 
 function updateInterfaceText() {
-    let auraStr = window.chosenAura === "light" ? "Светлая (Брелеры x2)" : (window.chosenAura === "dark" ? "Тёмная (Сила x2)" : "Нет");
-    statsLine.innerHTML = `<b>БРЕЛЕРЫ:</b> ${window.score.toLocaleString()} | <b>РАУНД:</b> ${window.currentRound} | <b>АУРА:</b> ${auraStr}<br>
-    <b>ОРУЖИЕ:</b> ${window.currentWeapon.toUpperCase()} [Ур. ${window.weaponLevels[window.currentWeapon]||1}]<br>
-    <b>ЛУТ:</b> Плащи: ${window.loot.vader_cloak} | Стены Саурона: ${window.loot.sauron_wall} | Короны: ${window.loot.luc_crown}<br>
-    <b>ГОРЯЧИЕ КЛАВИШИ:</b> 'Q' - Взрыв экрана (600 ур.) | 'E' - Заморозка | 'K' - Стенка Саурона`;
+    brelersStat.innerHTML = `💰 БРЕЛЕРЫ: <span style="color:#fff">${window.score.toLocaleString()}</span>`;
+    roundStat.innerHTML = `🔄 РАУНД: <span style="color:#fff">${window.currentRound}</span>`;
+    let auraStr = window.chosenAura === "light" ? "Светлая (x2 Брелеры)" : (window.chosenAura === "dark" ? "Тёмная (x2 Сила)" : "Нет");
+    auraStat.innerHTML = `✨ АУРА: <span style="color:#fff">${auraStr}</span>`;
+    
+    let activeStatuses = []; if(window.musicianStatus) activeStatuses.push("Музыкант"); if(window.sigmaStatus) activeStatuses.push("Сигма (x6 Урон)"); if(window.obiWanStatus) activeStatuses.push("Оби-Ван"); if(window.sauronStatus) activeStatuses.push("Саурон");
+    
+    lootLine.innerHTML = `🎒 <b>ИНВЕНТАРЬ ЛУТА:</b> Плащи Вейдера: <b>${window.loot.vader_cloak}</b> | Стены Саурона: <b>${window.loot.sauron_wall}</b> | Короны Ада: <b>${window.loot.luc_crown}</b> | Статусы: <span style="color:#fff">${activeStatuses.join(", ") || "Нет"}</span>`;
+    hotkeysLine.innerHTML = `⌨️ <b>ГОРЯЧИЕ КЛАВИШИ:</b> <span style="color:#00ffaa">[Q]</span> - Взрыв экрана (600 ур.) | <span style="color:#00ffaa">[E]</span> - Заморозка поля на 5с | <span style="color:#00ffaa">[K]</span> - Поставить стену Саурона (Длительность 8с)`;
     updateSpawnButtonText();
 }
 
@@ -113,15 +147,15 @@ function spawnLucifer() {
     }, 1500);
 }
 
-function spawnSauronFight() { document.getElementById("volcanoEl").style.display = "block"; window.spawnedThisRound = 1; createVirusElement(999999, true, false, "sauron"); const r = document.createElement("div"); r.id = "sauronRing"; r.style = "position:absolute;left:100px;top:250px;width:40px;height:40px;border-radius:50%;background:gold;box-shadow:0 0 20px gold;cursor:grab;z-index:9996;text-align:center;line-height:40px;font-weight:bold;color:red;"; r.textContent = "💍"; arena.appendChild(r); }
+function spawnSauronFight() { document.getElementById("volcanoEl").style.display = "block"; window.spawnedThisRound = 1; createVirusElement(999999, true, false, "sauron"); const r = document.createElement("div"); r.id = "sauronRing"; r.style = "position:absolute;left:100px;top:350px;width:50px;height:50px;border-radius:50%;background:gold;box-shadow:0 0 25px gold;cursor:grab;z-index:9996;text-align:center;line-height:50px;font-weight:bold;color:red;font-size:20px;"; r.textContent = "💍"; arena.appendChild(r); }
 
 function createVirusElement(hp, isB, isL, type) {
-    const a = document.createElement("div"); a.style = "position:absolute;background:black;color:white;font-family:monospace;font-weight:bold;border:2px solid red;padding:8px;z-index:9995;cursor:crosshair;";
-    if (type === "lucifer") { a.style.border = "4px solid #ff4500"; a.textContent = "😈 ЛЮЦИФЕР [100М HP]"; }
-    else if (type === "sauron") { a.style.border = "4px solid #4b0082"; a.textContent = "👁️ САУРОН [INF HP]"; }
+    const a = document.createElement("div"); a.style = "position:absolute;background:black;color:white;font-family:monospace;font-weight:bold;border:3px solid red;padding:12px;font-size:16px;z-index:9994;cursor:crosshair;box-shadow:0 0 10px red;";
+    if (type === "lucifer") { a.style.border = "4px solid #ff4500"; a.style.fontSize = "22px"; a.textContent = "😈 ЛЮЦИФЕР [100М HP]"; }
+    else if (type === "sauron") { a.style.border = "4px solid #4b0082"; a.style.fontSize = "22px"; a.textContent = "👁️ САУРОН [INF HP]"; }
     else a.textContent = `[${type.toUpperCase()}] ${hp} HP`;
-    a.style.left = Math.random() * (window.innerWidth - 180) + "px"; a.style.top = 180 + Math.random() * (window.innerHeight - 300) + "px"; arena.appendChild(a);
-    const o = getDiffStats(); const s = (isL || type === "vader" || type === "sauron" || type === "sigma") ? 18 : 5 * o.speed;
+    a.style.left = Math.random() * (window.innerWidth - 220) + "px"; a.style.top = 280 + Math.random() * (window.innerHeight - 450) + "px"; arena.appendChild(a);
+    const o = getDiffStats(); const s = (isL || type === "vader" || type === "sauron" || type === "sigma") ? 14 : 5 * o.speed;
     window.flyingViruses.push({ element: a, x: parseFloat(a.style.left), y: parseFloat(a.style.top), speedX: (Math.random() - 0.5) * s, speedY: (Math.random() - 0.5) * s, hp: hp, maxHp: hp, isBoss: isB, isLucifer: isL, type: type, isFrozen: false, isZombie: false });
 }
 
@@ -129,7 +163,7 @@ function moveEngine() {
     window.flyingViruses.forEach(v => {
         if (!v.isFrozen) {
             const t = v.element.getBoundingClientRect(); v.x += v.speedX; v.y += v.speedY;
-            if (v.x <= 0 || v.x + t.width >= window.innerWidth) v.speedX *= -1; if (v.y <= 0 || v.y + t.height >= window.innerHeight) v.speedY *= -1;
+            if (v.x <= 0 || v.x + t.width >= window.innerWidth) v.speedX *= -1; if (v.y <= 240 || v.y + t.height >= window.innerHeight) v.speedY *= -1;
             window.gameWalls.forEach(w => { const wR = w.getBoundingClientRect(); if (v.x + t.width >= wR.left && v.x <= wR.right && v.y + t.height >= wR.top && v.y <= wR.bottom) { v.speedX *= -1; v.speedY *= -1; v.x += v.speedX * 2; v.y += v.speedY * 2; } });
             v.element.style.left = v.x + "px"; v.element.style.top = v.y + "px";
         }
@@ -148,6 +182,7 @@ setInterval(() => {
 
 let isDraggingRing = false, ringEl = null;
 arena.onmousedown = (e) => { if (e.target && e.target.id === "sauronRing") { isDraggingRing = true; ringEl = e.target; e.preventDefault(); } };
+arena.onmousemove = (e) => { if (isDraggingRing && ringEl) { ringEl.style.left = (e.clientX - 25) + "px"; ringEl.style.top = (e.clientY - 25) + "px"; } };
 arena.onmouseup = () => {
     if (isDraggingRing && ringEl) {
         isDraggingRing = false; const rR = ringEl.getBoundingClientRect(); const vR = document.getElementById("volcanoEl").getBoundingClientRect();
@@ -158,7 +193,6 @@ arena.onmouseup = () => {
 };
 
 function handleMouseTraces() {
-    if (isDraggingRing && ringEl) { ringEl.style.left = realMouseX + "px"; ringEl.style.top = realMouseY + "px"; }
     window.flyingViruses.forEach(v => {
         const t = v.element.getBoundingClientRect(); if (mouseX >= t.left && mouseX <= t.right && mouseY >= t.top && mouseY <= t.bottom) {
             if (window.currentWeapon === "darkBlade") { let d = 15 * (window.weaponLevels.darkBlade || 1); if (Math.random() < 0.1) d *= 3; if (v.type !== "mutant") damageVirus(v, d * getAuraMult() * getStatusMult("darkBlade")); }
@@ -183,7 +217,6 @@ arena.onclick = (e) => {
 function updateVirusText(v) { v.element.textContent = `[${v.type.toUpperCase()}] ${v.hp} HP`; }
 function damageVirus(v, t) {
     v.hp -= t; 
-    // Исправлено: Теперь мутанты получают урон, а на 100 HP и меньше призывают подмогу!
     if (v.type === "mutant" && v.hp <= 100 && v.hp + t > 100) { createVirusElement(100, false, false, "spy"); }
     if (v.hp <= 0) {
         v.element.remove(); let n = 100 * window.currentRound;
