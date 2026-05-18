@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Арена Вирусов: Эволюция Боссов</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; user-select: none; font-family: monospace; color: #00ff00; }
+        .lucifer-fire { position: absolute; background: radial-gradient(circle, #ff4500 0%, transparent 70%); pointer-events: none; z-index: 9991; animation: burn 0.5s infinite alternate; }
+        .sound-wave { position: absolute; border: 4px double #00ffff; border-radius: 50%; pointer-events: none; z-index: 9992; animation: wave 0.8s linear forwards; }
+        .volcano { position: absolute; bottom: 20px; right: 20px; width: 120px; height: 100px; background: linear-gradient(to top, #333, #555); clip-path: polygon(20% 100%, 40% 30%, 60% 30%, 80% 100%); border-top: 15px solid red; z-index: 9991; display: none; text-align: center; color: white; font-weight: bold; line-height: 140px; box-shadow: 0 0 30px red; }
+        .game-wall { position: absolute; width: 15px; height: 120px; background: #00ffea; border: 1px solid #fff; box-shadow: 0 0 15px #00ffea; z-index: 9993; }
+        .boss-btn { background: black; color: #ff3300; border: 1px solid #ff3300; padding: 4px 8px; cursor: pointer; font-weight: bold; font-family: monospace; margin: 2px; }
+        .w-btn { background: #111; color: #00ff00; border: 1px solid #00ff00; padding: 4px 8px; cursor: pointer; font-family: monospace; margin: 2px; }
+        @keyframes burn { from { transform: scale(1); opacity: 0.6; } to { transform: scale(1.2); opacity: 0.9; } }
+        @keyframes wave { from { transform: scale(0.1); opacity: 1; } to { transform: scale(3); opacity: 0; } }
+    </style>
+</head>
+<body>
+<div id="volcanoEl" class="volcano">ВУЛКАН</div>
+<script>
+const arena = document.createElement("div"); arena.style = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:black;z-index:9990;overflow:hidden;"; document.body.appendChild(arena);
+
+// Сброс текущего раунда при входе
+window.currentRound = 1;
+window.score = parseInt(localStorage.getItem("vGame_brelers")) || 0;
+window.gameDifficulty = localStorage.getItem("vGame_diff") || "easy";
+window.chosenAura = localStorage.getItem("vGame_aura") || "none";
+window.musicianStatus = localStorage.getItem("vGame_musician") === "true";
+window.sigmaStatus = localStorage.getItem("vGame_sigmaStatus") === "true";
+window.obiWanStatus = localStorage.getItem("vGame_obiWanStatus") === "true";
+window.sauronStatus = localStorage.getItem("vGame_sauronStatus") === "true";
+window.zombieSettings = JSON.parse(localStorage.getItem("vGame_zombieSettings")) || { hp: 100, speed: 5 };
+window.favoriteWeapons = JSON.parse(localStorage.getItem("vGame_favorites")) || [];
+window.unlockedWeapons = JSON.parse(localStorage.getItem("vGame_weapons")) || ["laser", "bomb_default", "brick", "saber"];
+window.weaponLevels = JSON.parse(localStorage.getItem("vGame_levels")) || { laser:1, bomb_default:1, brick:1, darkBlade:1, luciferSword:1, saber:1, shocker:1, human_gun:1, human_axe:1, vader_saber:1, sauron_yatagan:1 };
+window.loot = JSON.parse(localStorage.getItem("vGame_loot")) || { luc_wings:0, luc_dna:0, luc_crown:0, human_armor:0, vader_mask:0, vader_cloak:0, sauron_wall:0 };
+
+window.currentWeapon = "laser"; window.flyingViruses = []; window.gameWalls = [];
+window.bombsLeft = 2; window.freezesLeft = 2; window.spawnedThisRound = 0;
+window.cooldowns = { shocker: 0 }; window.cursorSpeedMultiplier = 1;
+
+let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2, realMouseX = mouseX, realMouseY = mouseY;
+arena.onmousemove = (e) => { realMouseX = e.clientX; realMouseY = e.clientY; handleMouseTraces(); };
+setInterval(() => { mouseX += (realMouseX - mouseX) * 0.2 * window.cursorSpeedMultiplier; mouseY += (realMouseY - mouseY) * 0.2 * window.cursorSpeedMultiplier; }, 16);
+
+function getDiffStats() {
+    if (window.gameDifficulty === "medium") return { speed: 1.5, hp: 1.5, cash: 1.5 };
+    if (window.gameDifficulty === "hard") return { speed: 2, hp: 2, cash: 2 };
+    if (window.gameDifficulty === "extreme") return { speed: 5, hp: 4, cash: 4 };
+    return { speed: 1, hp: 1, cash: 1 };
+}
+
+// ВЕРХНЯЯ ПАНЕЛЬ С УПРАВЛЕНИЕМ
+const topBar = document.createElement("div"); topBar.style = "position:absolute;top:15px;left:20px;display:flex;flex-direction:column;gap:6px;z-index:9999;background:rgba(0,0,0,0.8);padding:10px;border:1px solid #00ff00;"; arena.appendChild(topBar);
+const statsLine = document.createElement("div"); topBar.appendChild(statsLine);
+const btnLine = document.createElement("div"); topBar.appendChild(btnLine);
+const spawnBtn = document.createElement("button"); spawnBtn.style = "padding:6px;background:black;color:#00ff00;border:1px solid #00ff00;cursor:pointer;font-weight:bold;"; btnLine.appendChild(spawnBtn);
+
+const diffSelect = document.createElement("select"); diffSelect.style = "background:black;color:#00ff00;border:1px solid #00ff00;padding:4px;margin-left:6px;";
+const modes = { easy: "Легкий (x1)", medium: "Средний (x1.5)", hard: "Сложный (x2)", extreme: "Экстремальный (x5)" };
+for (let m in modes) { const opt = document.createElement("option"); opt.value = m; opt.textContent = modes[m]; if(m === window.gameDifficulty) opt.selected = true; diffSelect.appendChild(opt); }
+diffSelect.onchange = () => { window.gameDifficulty = diffSelect.value; localStorage.setItem("vGame_diff", window.gameDifficulty); updateInterfaceText(); };
+btnLine.appendChild(diffSelect);
+
+// МЕНЮ УПРАВЛЕНИЯ БОССАМИ И ОРУЖИЕМ
+const panelLine = document.createElement("div"); panelLine.style.marginTop = "6px"; topBar.appendChild(panelLine);
+function renderControls() {
+    panelLine.innerHTML = "";
+    const bConfig = [
+        { name: "👨 Человек", act: () => createVirusElement(500, true, false, "human") },
+        { name: "🗿 Сигма", act: () => createVirusElement(1000000, true, false, "sigma") },
+        { name: "🟥 Люцифер", act: () => spawnLucifer() },
+        { name: "🌌 Вейдер", act: () => { if(window.obiWanStatus) createVirusElement(1000000000000, true, false, "vader"); else alert("Нужен статус Оби-Ван!"); } },
+        { name: "🌋 Саурон", act: () => spawnSauronFight() }
+    ];
+    bConfig.forEach(b => { const btn = document.createElement("button"); btn.className = "boss-btn"; btn.textContent = b.name; btn.onclick = b.act; panelLine.appendChild(btn); });
+    
+    panelLine.appendChild(document.createElement("br"));
+    window.unlockedWeapons.forEach(w => {
+        const btn = document.createElement("button"); btn.className = "w-btn";
+        btn.textContent = w + (window.favoriteWeapons.includes(w) ? " ⭐" : "");
+        if(window.currentWeapon === w) btn.style.borderColor = "#fff";
+        btn.onclick = () => { window.currentWeapon = w; updateInterfaceText(); renderControls(); };
+        panelLine.appendChild(btn);
+    });
+}
+
+function getMaxViruses() { return window.currentRound % 10 === 0 ? 1 : window.currentRound; }
+function updateSpawnButtonText() { spawnBtn.textContent = window.currentRound % 10 === 0 ? "ПРИЗВАТЬ БОССА РАУНДА" : `СПАВН ВИРУСА (${window.spawnedThisRound}/${getMaxViruses()})`; }
+
+function updateInterfaceText() {
+    let auraStr = window.chosenAura === "light" ? "Светлая (Брелеры x2)" : (window.chosenAura === "dark" ? "Тёмная (Сила x2)" : "Нет");
+    statsLine.innerHTML = `<b>БРЕЛЕРЫ:</b> ${window.score.toLocaleString()} | <b>РАУНД:</b> ${window.currentRound} | <b>АУРА:</b> ${auraStr}<br>
+    <b>ОРУЖИЕ:</b> ${window.currentWeapon.toUpperCase()} [Ур. ${window.weaponLevels[window.currentWeapon]||1}]<br>
+    <b>ЛУТ:</b> Плащи: ${window.loot.vader_cloak} | Стены Саурона: ${window.loot.sauron_wall} | Короны: ${window.loot.luc_crown}<br>
+    <b>ГОРЯЧИЕ КЛАВИШИ:</b> 'Q' - Взрыв экрана (600 ур.) | 'E' - Заморозка на 5с | 'K' - Поставить стену Саурона`;
+    updateSpawnButtonText();
+}
+
+spawnBtn.onclick = function(e) {
+    e.stopPropagation(); if (window.spawnedThisRound >= getMaxViruses() || (window.currentRound % 10 === 0 && window.flyingViruses.length > 0)) return;
+    window.spawnedThisRound++; updateSpawnButtonText();
+    const isB = window.currentRound % 10 === 0; const bi = window.currentRound / 10; const ds = getDiffStats();
+    let hp = isB ? (10000 * Math.pow(10, bi - 1)) : (100 * window.currentRound); hp *= ds.hp;
+    let type = "normal"; if (!isB) { let r = Math.random(); if (r < 0.2) type = "spy"; else if (r < 0.4) type = "doctor"; else if (r < 0.5) type = "mutant"; }
+    createVirusElement(hp, isB, false, type);
+};
+
+function spawnLucifer() {
+    window.spawnedThisRound = 1; createVirusElement(100000000, true, true, "lucifer");
+    window.lucFireInt = setInterval(() => {
+        const l = window.flyingViruses.find(item => item.isLucifer); if (!l) { clearInterval(window.lucFireInt); return; }
+        const f = document.createElement("div"); f.className = "lucifer-fire"; f.style.left = (l.x + 30) + "px"; f.style.top = (l.y + 30) + "px"; f.style.width = "180px"; f.style.height = "180px"; arena.appendChild(f);
+        const cs = setInterval(() => { if (!arena.contains(f)) { clearInterval(cs); return; } const fR = f.getBoundingClientRect(); const g = Math.sqrt(Math.pow((fR.left + 90) - mouseX, 2) + Math.pow((fR.top + 90) - mouseY, 2)); window.cursorSpeedMultiplier = g <= 90 ? 0.2 : 1; }, 100);
+        setTimeout(() => { clearInterval(cs); window.cursorSpeedMultiplier = 1; f.remove(); }, 4000);
+    }, 1500);
+}
+
+function spawnSauronFight() { document.getElementById("volcanoEl").style.display = "block"; window.spawnedThisRound = 1; createVirusElement(999999, true, false, "sauron"); const r = document.createElement("div"); r.id = "sauronRing"; r.style = "position:absolute;left:100px;top:250px;width:40px;height:40px;border-radius:50%;background:gold;box-shadow:0 0 20px gold;cursor:grab;z-index:9996;text-align:center;line-height:40px;font-weight:bold;color:red;"; r.textContent = "💍"; arena.appendChild(r); }
+
+function createVirusElement(hp, isB, isL, type) {
+    const a = document.createElement("div"); a.style = "position:absolute;background:black;color:white;font-family:monospace;font-weight:bold;border:2px solid red;padding:8px;z-index:9995;cursor:crosshair;";
+    if (type === "lucifer") { a.style.border = "4px solid #ff4500"; a.textContent = "😈 ЛЮЦИФЕР [100М HP]"; }
+    else if (type === "sauron") { a.style.border = "4px solid #4b0082"; a.textContent = "👁️ САУРОН [INF HP]"; }
+    else a.textContent = `[${type.toUpperCase()}] ${hp} HP`;
+    a.style.left = Math.random() * (window.innerWidth - 180) + "px"; a.style.top = 180 + Math.random() * (window.innerHeight - 300) + "px"; arena.appendChild(a);
+    const o = getDiffStats(); const s = (isL || type === "vader" || type === "sauron" || type === "sigma") ? 18 : 5 * o.speed;
+    window.flyingViruses.push({ element: a, x: parseFloat(a.style.left), y: parseFloat(a.style.top), speedX: (Math.random() - 0.5) * s, speedY: (Math.random() - 0.5) * s, hp: hp, maxHp: hp, isBoss: isB, isLucifer: isL, type: type, isFrozen: false, isZombie: false });
+}
+
+function moveEngine() {
+    window.flyingViruses.forEach(v => {
+        if (!v.isFrozen) {
+            const t = v.element.getBoundingClientRect(); v.x += v.speedX; v.y += v.speedY;
+            if (v.x <= 0 || v.x + t.width >= window.innerWidth) v.speedX *= -1; if (v.y <= 0 || v.y + t.height >= window.innerHeight) v.speedY *= -1;
+            window.gameWalls.forEach(w => { const wR = w.getBoundingClientRect(); if (v.x + t.width >= wR.left && v.x <= wR.right && v.y + t.height >= wR.top && v.y <= wR.bottom) { v.speedX *= -1; v.speedY *= -1; v.x += v.speedX * 2; v.y += v.speedY * 2; } });
+            v.element.style.left = v.x + "px"; v.element.style.top = v.y + "px";
+        }
+    });
+    requestAnimationFrame(moveEngine);
+}
+moveEngine();
+
+setInterval(() => {
+    window.flyingViruses.forEach(v => {
+        if (v.type === "spy" && !v.isFrozen) v.element.style.color = v.element.style.color === "black" ? "#ff00ff" : "black";
+        if (v.type === "human" && !v.isFrozen && Math.random() < 0.2) { createVirusElement(500, false, false, "human_minion"); }
+        if (v.type === "doctor" && !v.isFrozen) { window.flyingViruses.forEach(t => { if (t !== v && Math.sqrt(Math.pow(t.x - v.x, 2) + Math.pow(t.y - v.y, 2)) <= 200) { t.hp = Math.min(t.maxHp, t.hp + 100); updateVirusText(t); } }); }
+    });
+}, 1000);
+
+let isDraggingRing = false, ringEl = null;
+arena.onmousedown = (e) => { if (e.target && e.target.id === "sauronRing") { isDraggingRing = true; ringEl = e.target; e.preventDefault(); } };
+arena.onmouseup = () => {
+    if (isDraggingRing && ringEl) {
+        isDraggingRing = false; const rR = ringEl.getBoundingClientRect(); const vR = document.getElementById("volcanoEl").getBoundingClientRect();
+        if (rR.left >= vR.left && rR.left <= vR.right && rR.top >= vR.top && rR.top <= vR.bottom) {
+            const sauron = window.flyingViruses.find(v => v.type === "sauron"); if (sauron) { ringEl.remove(); document.getElementById("volcanoEl").style.display = "none"; damageVirus(sauron, 999999999); }
+        }
+    }
+};
+
+function handleMouseTraces() {
+    if (isDraggingRing && ringEl) { ringEl.style.left = realMouseX + "px"; ringEl.style.top = realMouseY + "px"; }
+    window.flyingViruses.forEach(v => {
+        const t = v.element.getBoundingClientRect(); if (mouseX >= t.left && mouseX <= t.right && mouseY >= t.top && mouseY <= t.bottom) {
+            if (window.currentWeapon === "darkBlade") { let d = 15 * (window.weaponLevels.darkBlade || 1); if (Math.random() < 0.1) d *= 3; if (v.type !== "mutant") damageVirus(v, d * getAuraMult() * getStatusMult("darkBlade")); }
+        }
+    });
+}
+
+function getAuraMult() { return window.chosenAura === "dark" ? 2 : 1; }
+function getStatusMult(w) { let m = 1; if (window.sigmaStatus) m *= 6; if (window.obiWanStatus && ["darkBlade","luciferSword","vader_saber","saber"].includes(w)) m *= 6; return m; }
+
+arena.onclick = (e) => {
+    const t = e.target; const n = t && t.textContent && t.textContent.includes("HP"); let g = window.weaponLevels[window.currentWeapon] || 1;
+    if (n) {
+        e.stopPropagation(); const a = window.flyingViruses.find(v => v.element === t); if (!a) return;
+        if (a.type === "sauron") { alert("Саурон неуязвим для оружия! Затолкните Кольцо в вулкан!"); return; }
+        let o = window.currentWeapon === "laser" ? 100 : (window.currentWeapon === "bomb_default" ? 200 : (window.currentWeapon === "saber" ? 1 : 400)); o *= g;
+        if (Math.random() < 0.1 && ["saber","darkBlade","human_axe","vader_saber"].includes(window.currentWeapon)) o *= 3; // КРИТ х3
+        damageVirus(a, o * getAuraMult() * getStatusMult(window.currentWeapon));
+    }
+};
+
+function updateVirusText(v) { v.element.textContent = `[${v.type.toUpperCase()}] ${v.hp} HP`; }
+function damageVirus(v, t) {
+    v.hp -= t; if (v.type === "mutant" && v.hp <= 100 && v.hp + t > 100) { createVirusElement(100, false, false, "spy"); }
+    if (v.hp <= 0) {
+        v.element.remove(); let n = 100 * window.currentRound;
+        if (v.type === "human") { if (Math.random() < 0.5) window.unlockedWeapons.push("human_gun"); if (Math.random() < 0.4) window.unlockedWeapons.push("human_axe"); window.loot.human_armor++; n = 1000; }
+        if (v.type === "sigma") { window.sigmaStatus = true; localStorage.setItem("vGame_sigmaStatus", "true"); n = 100000000; }
+        if (v.type === "vader") { let r = Math.random(); if (r < 0.5) window.unlockedWeapons.push("vader_saber"); if (r < 0.4) window.loot.vader_cloak++; n = 10500000; }
+        if (v.type === "sauron") { window.sauronStatus = true; window.loot.sauron_wall++; n = 1000000; }
+        if (v.type === "lucifer") { window.unlockedWeapons.push("luciferSword"); window.loot.luc_wings++; n = 50000000; }
+        if (window.chosenAura === "light") n *= 2; window.score += n; saveAllData(); renderControls();
+        window.flyingViruses = window.flyingViruses.filter(i => i !== v); setTimeout(checkRoundEnd, 10);
+    } else updateVirusText(v);
+}
+
+window.onkeydown = function(e) {
+    const t = e.key;
+    if (t.toLowerCase() === 'k' || t.toLowerCase() === 'л') {
+        if (window.loot.sauron_wall <= 0) return; window.loot.sauron_wall--;
+        const n = document.createElement("div"); n.className = "game-wall"; n.style.left = mouseX + "px"; n.style.top = mouseY + "px"; arena.appendChild(n); window.gameWalls.push(n);
+        setTimeout(() => { n.remove(); window.gameWalls = window.gameWalls.filter(w => w !== n); }, 8000); saveAllData();
+    }
+    if (t.toLowerCase() === 'q' || t.toLowerCase() === 'й') { window.flyingViruses.forEach(v => damageVirus(v, 600)); }
+    if (t.toLowerCase() === 'e' || t.toLowerCase() === 'у') { window.flyingViruses.forEach(v => { v.isFrozen = true; v.element.style.borderColor = "#00ffff"; }); setTimeout(() => { window.flyingViruses.forEach(v => { v.isFrozen = false; v.element.style.borderColor = "red"; }); }, 5000); }
+};
+
+function checkRoundEnd() {
+    if (window.spawnedThisRound >= getMaxViruses() && window.flyingViruses.length === 0) {
+        if (window.currentRound === 20 && window.chosenAura === "none") { const e = confirm("20 раунд! ОК - Светлая аура (очки х2), Отмена - Темная (сила x2)"); window.chosenAura = e ? "light" : "dark"; }
+        window.currentRound++; saveAllData(); updateInterfaceText(); alert(`Раунд пройден! Начинается раунд ${window.currentRound}`);
+    }
+}
+
+function saveAllData() { localStorage.setItem("vGame_brelers", window.score); localStorage.setItem("vGame_weapons", JSON.stringify(window.unlockedWeapons)); localStorage.setItem("vGame_levels", JSON.stringify(window.weaponLevels)); localStorage.setItem("vGame_loot", JSON.stringify(window.loot)); localStorage.setItem("vGame_favorites", JSON.stringify(window.favoriteWeapons)); updateInterfaceText(); }
+updateInterfaceText(); renderControls();
+</script>
+</body>
+</html>
