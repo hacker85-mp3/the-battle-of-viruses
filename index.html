@@ -693,26 +693,29 @@ arena.onclick = function(e) {
     }
 
     // ИСПРАВЛЕННЫЙ ПРИОРИТЕТ ГИПНОЗА: Срабатывает до нанесения пулевого урона и намертво чинит 10+ раунды!
-    if (n && window.currentWeapon === "hypnosis") {
-        e.stopPropagation(); const targetVirus = window.flyingViruses.find(i => i.element === t);
+        // ИСПРАВЛЕНО: Гипноз теперь проверяет сам элемент вируса напрямую, без привязки к тексту HP!
+    if (window.currentWeapon === "hypnosis") {
+        const targetVirus = window.flyingViruses.find(i => i.element === t || i.element === e.target);
         if (targetVirus && !targetVirus.isZombie && !targetVirus.isBoss) {
-            targetVirus.isZombie = true; targetVirus.hp = window.sauronStatus ? window.zombieSettings.hp : 200 * lvl; targetVirus.maxHp = targetVirus.hp;
-            if (window.hasOrcMutation) { targetVirus.speedX *= 1.5; targetVirus.speedY *= 1.5; targetVirus.element.style.border = "2px dashed #9400d3"; } 
-            else { targetVirus.element.style.border = "2px solid #00ff00"; }
-            targetVirus.element.style.color = "#00ff00"; updateVirusText(targetVirus); alert("🧠 Вирус успешно загипнотизирован и обращён в союзника!"); setTimeout(checkRoundEnd, 20); return;
+            e.stopPropagation();
+            targetVirus.isZombie = true; 
+            targetVirus.hp = window.sauronStatus ? window.zombieSettings.hp : 200 * lvl; 
+            targetVirus.maxHp = targetVirus.hp;
+            
+            if (window.hasOrcMutation) { 
+                targetVirus.speedX *= 1.5; 
+                targetVirus.speedY *= 1.5; 
+                targetVirus.element.style.border = "2px dashed #9400d3"; 
+            } else { 
+                targetVirus.element.style.border = "2px solid #00ff00"; 
+            }
+            targetVirus.element.style.color = "#00ff00"; 
+            updateVirusText(targetVirus); 
+            alert("🧠 Вирус успешно загипнотизирован и обращён в союзника!"); 
+            setTimeout(checkRoundEnd, 20); 
+            return;
         }
     }
-
-    if (window.currentWeapon === "sith_mask") {
-        playSound('laser'); window.flyingViruses.forEach(v => {
-            if (!v.isZombie) {
-                v.x = mouseX + (Math.random() - 0.5) * 40; v.y = mouseY + (Math.random() - 0.5) * 40;
-                v.isFrozen = true; v.element.style.borderColor = "#ff0055"; setTimeout(() => { v.isFrozen = false; v.element.style.borderColor = "red"; }, 3000);
-                damageVirus(v, 300 * lvl * getAuraMult() * getStatusMult("sith_mask"));
-            }
-        }); return;
-    }
-
     if (window.currentWeapon === "gandalfStaff" || window.currentWeapon === "kinetic_annihilator") {
         let isAnnihilator = window.currentWeapon === "kinetic_annihilator";
         let cdTime = isAnnihilator ? 6000 : 10000; let baseDmg = isAnnihilator ? 1500 : 600; let radius = isAnnihilator ? 450 : 250;
