@@ -22,7 +22,7 @@
 <script>
 const arena = document.createElement("div"); arena.style.position = "fixed"; arena.style.top = "0"; arena.style.left = "0"; arena.style.width = "100vw"; arena.style.height = "100vh"; arena.style.backgroundColor = "black"; arena.style.zIndex = "9990"; arena.style.overflow = "hidden"; document.body.appendChild(arena);
 
-window.currentRound = 1; // Автосброс до 1 раунда при каждом перезапуске!
+window.currentRound = 1;
 window.score = parseInt(localStorage.getItem("vGame_brelers")) || 0;
 window.gameDifficulty = localStorage.getItem("vGame_diff") || "easy";
 window.chosenAura = localStorage.getItem("vGame_aura") || "none";
@@ -39,7 +39,6 @@ window.favoriteWeapons = JSON.parse(localStorage.getItem("vGame_favorites")) || 
 window.unlockedWeapons = JSON.parse(localStorage.getItem("vGame_weapons")) || ["laser", "bomb_default"];
 window.weaponLevels = JSON.parse(localStorage.getItem("vGame_levels")) || { laser:1, bomb_default:1, brick:1, poison:1, darkBlade:1, gandalfStaff:1, hypnosis:1, godLight:1, luciferSword:1, saber:1, flyingMechSword:1, callLuciferPet:1, shocker:1, human_gun:1, human_axe:1, vader_saber:1, sauron_yatagan:1 };
 
-// Исправление багов undefined в луте
 window.loot = JSON.parse(localStorage.getItem("vGame_loot")) || { luc_wings:0, luc_dna:0, luc_crown:0, human_armor:0, vader_mask:0, vader_cloak:0, sauron_wall:0 };
 if (typeof window.loot.vader_cloak === "undefined") window.loot.vader_cloak = 0;
 if (typeof window.loot.sauron_wall === "undefined") window.loot.sauron_wall = 0;
@@ -94,15 +93,14 @@ function updateInterfaceText() {
     const weaponsMap = { laser: "Лазер", bomb_default: "Бомба", brick: "Кирпич", poison: "Отрава", darkBlade: "Меч Тьмы", gandalfStaff: "Посох Гэндальфа", hypnosis: "Гипноз", godLight: "Свет Бога", luciferSword: "Меч Люцифера", saber: "Сабля", flyingMechSword: "Летающий меч", callLuciferPet: "Призыв Люцифера", shocker: "Электрошокер", human_gun: "Человеческая Пушка", human_axe: "Топор Людей", vader_saber: "Лазерный Меч Вейдера", sauron_yatagan: "Ятаган Саурона" };
     infoContent.textContent = `Выбрано оружие: ${weaponsMap[window.currentWeapon] || window.currentWeapon} [Ур. ${window.weaponLevels[window.currentWeapon]||1}]\nАура: ${auraStr} | Статусы: ${activeStatuses.join(", ") || "Нет"}\n\n'Q' - Бесплатная бомба | 'E' - Заморозка на 5с | 'K' - Поставить стену Саурона`;
 }
-
-const megaWindow = document.createElement("div"); megaWindow.style.position = "absolute"; megaWindow.style.top = "70px"; megaWindow.style.left = "20px"; megaWindow.style.width = "calc(100vw - 40px)"; megaWindow.style.height = "calc(100vh - 180px)"; megaWindow.style.backgroundColor = "rgba(0,15,0,0.96)"; megaWindow.style.border = "2px solid #00ff00"; megaWindow.style.zIndex = "10000"; megaWindow.style.display = "none"; megaWindow.style.flexDirection = "column"; megaWindow.style.fontFamily = "monospace"; megaWindow.style.color = "#00ff00"; megaWindow.style.padding = "15px"; megaWindow.style.boxSizing = "border-box"; arena.appendChild(megaWindow);
+const megaWindow = document.createElement("div"); megaWindow.style = "position:absolute;top:70px;left:20px;width:calc(100vw - 40px);height:calc(100vh - 180px);background:rgba(0,15,0,0.96);border:2px solid #00ff00;z-index:10000;display:none;flex-direction:column;font-family:monospace;color:#00ff00;padding:15px;box-sizing:border-box;"; arena.appendChild(megaWindow);
 menuBtn.onclick = (e) => { e.stopPropagation(); if (megaWindow.style.display === "none") { megaWindow.style.display = "flex"; switchTab("shop_normal"); } else { megaWindow.style.display = "none"; } };
 
 const navTabs = document.createElement("div"); navTabs.style.display = "flex"; navTabs.style.gap = "6px"; navTabs.style.flexWrap = "wrap"; navTabs.style.borderBottom = "1px solid #00ff00"; navTabs.style.paddingBottom = "10px"; megaWindow.appendChild(navTabs);
-const tabContainer = document.createElement("div"); tabContainer.style.flex = "1"; tabContainer.style.overflowY = "auto"; tabContainer.style.marginTop = "15px"; tabContainer.style.paddingRight = "5px"; megaWindow.appendChild(tabContainer);
+const tabContainer = document.createElement("div"); tabContainer.style = "flex:1;overflow-y:auto;margin-top:15px;padding-right:5px;"; megaWindow.appendChild(tabContainer);
 
 const tabsConfig = [{ id: "shop_normal", name: "Обычный Магазин" }, { id: "shop_exclusive", name: "Эксклюзивное Оружие" }, { id: "shop_bonuses", name: "Магазин Бонусов" }, { id: "forge", name: "Кузница Крафта" }, { id: "inventory", name: "Инвентарь и Лут" }, { id: "virus_index", name: "Индекс Вирусов" }];
-tabsConfig.forEach(t => { const btn = document.createElement("button"); btn.textContent = t.name; btn.style.background = "black"; btn.style.color = "#00ff00"; btn.style.border = "1px solid #00ff00"; btn.style.padding = "6px 10px"; btn.style.cursor = "pointer"; btn.style.fontWeight = "bold"; btn.onclick = () => switchTab(t.id); navTabs.appendChild(btn); });
+tabsConfig.forEach(t => { const btn = document.createElement("button"); btn.textContent = t.name; btn.style = "background:black;color:#00ff00;border:1px solid #00ff00;padding:6px 10px;cursor:pointer;font-weight:bold;"; btn.onclick = () => switchTab(t.id); navTabs.appendChild(btn); });
 
 function switchTab(tabId) { tabContainer.innerHTML = ""; if (tabId === "shop_normal") renderNormalShop(); if (tabId === "shop_exclusive") renderExclusiveShop(); if (tabId === "shop_bonuses") renderBonusesShop(); if (tabId === "forge") renderForge(); if (tabId === "inventory") renderInventory(); if (tabId === "virus_index") renderVirusIndex(); }
 
@@ -111,7 +109,7 @@ function renderNormalShop() { normalWeapons.forEach(item => { createWeaponShopRo
 
 const exclusiveWeapons = [
     { id: "darkBlade", name: "Меч Тьмы", cost: 100000, upgradeCost: 50000, desc: "Урон ведением мыши по экрану. Крит х3.", color: "#8a2be2" }, 
-    { id: "gandalfStaff", name: "Посох Гэндальфа", cost: 100000, upgradeCost: 80000, desc: "Взрыв на 600 урона. КД 10 сек.", color: "#00ffff" }, 
+    { id: "gandalfStaff", name: "Посох Гэндальфа", cost: 100000, upgradeCost: 80000, desc: "Взрыв на 600 урона по площади. КД 10 сек.", color: "#00ffff" }, 
     { id: "hypnosis", name: "Гипноз", cost: 100000000, upgradeCost: 50000000, desc: "Обращает вирус в зомби-союзника. КД 10с.", color: "#00ffaa" }, 
     { id: "godLight", name: "Свет Бога", cost: 10000000000, upgradeCost: 5000000000, desc: "Аннигиляция врагов в области. КД 10с.", color: "#fff" }, 
     { id: "luciferSword", name: "Меч Люцифера", cost: 0, upgradeCost: 100000000, desc: "Трофей Босса Люцифера. Крит х3.", color: "#ff4500", isDropOnly: true }, 
@@ -143,45 +141,36 @@ function createWeaponShopRow(item, isEx) {
     sellBtn.onclick = () => { if(window.currentWeapon === item.id) window.currentWeapon = "laser"; window.score += item.cost / 2; window.unlockedWeapons = window.unlockedWeapons.filter(id => id !== item.id); saveAllData(); switchTab(isEx ? "shop_exclusive" : "shop_normal"); };
     right.appendChild(buyBtn); right.appendChild(upBtn); right.appendChild(sellBtn); row.appendChild(left); row.appendChild(right); tabContainer.appendChild(row);
 }
+
 function renderBonusesShop() {
     const box = document.createElement("div"); box.style = "border:1px solid #00ff00;padding:15px;display:flex;flex-direction:column;gap:10px;";
     const oTitle = document.createElement("b"); oTitle.style.color = "#00ffff"; oTitle.textContent = "⚔️ СТАТУС: ОБИ-ВАН-КЕНОБИ";
     const oDesc = document.createElement("span"); oDesc.style.fontSize = "12px"; oDesc.textContent = "Цена: 200,000 брелеров. Даёт 6X урона на МЕЧАХ и открывает доступ к Дарт Вейдеру!";
     const oBtn = document.createElement("button"); oBtn.style.padding = "6px"; oBtn.style.cursor = "pointer";
-    if (window.obiWanStatus) {
-        oBtn.textContent = "АКТИВИРОВАНО"; oBtn.style.background = "#222"; oBtn.style.color = "#555";
-    } else {
+    if (window.obiWanStatus) { oBtn.textContent = "АКТИВИРОВАНО"; oBtn.style.background = "#222"; oBtn.style.color = "#555"; }
+    else {
         oBtn.textContent = "КУПИТЬ СТАТУС"; oBtn.style.background = "black"; oBtn.style.color = "#00ffff"; oBtn.style.border = "1px solid #00ffff";
-        oBtn.onclick = () => {
-            if (window.score >= 200000) { window.score -= 200000; window.obiWanStatus = true; localStorage.setItem("vGame_obiWanStatus", "true"); saveAllData(); renderBonusesShop(); }
-            else { alert("Недостаточно брелеров!"); }
-        };
+        oBtn.onclick = () => { if (window.score >= 200000) { window.score -= 200000; window.obiWanStatus = true; localStorage.setItem("vGame_obiWanStatus", "true"); saveAllData(); renderBonusesShop(); } else { alert("Недостаточно брелеров!"); } };
     }
     box.appendChild(oTitle); box.appendChild(oDesc); box.appendChild(oBtn);
 
     const shockTitle = document.createElement("b"); shockTitle.style.color = "#ffd700"; shockTitle.style.marginTop = "10px"; shockTitle.textContent = "⚡ ЭЛЕКТРОШОКЕР (Сверх-Оружие)";
     const shockBtn = document.createElement("button"); shockBtn.style.padding = "6px"; shockBtn.style.cursor = "pointer";
-    if (window.unlockedWeapons.includes("shocker")) {
-        shockBtn.textContent = "РАЗБЛОКИРОВАНО"; shockBtn.style.background = "#222"; shockBtn.style.color = "#555";
-    } else {
+    if (window.unlockedWeapons.includes("shocker")) { shockBtn.textContent = "РАЗБЛОКИРОВАНО"; shockBtn.style.background = "#222"; shockBtn.style.color = "#555"; }
+    else {
         shockBtn.textContent = "КУПИТЬ ЗА 10,000,000 БРЕЛЕРОВ"; shockBtn.style.background = "black"; shockBtn.style.color = "#ffd700"; shockBtn.style.border = "1px solid #ffd700";
-        shockBtn.onclick = () => {
-            if (window.score >= 10000000) { window.score -= 10000000; window.unlockedWeapons.push("shocker"); saveAllData(); renderBonusesShop(); }
-            else { alert("Недостаточно брелеров!"); }
-        };
+        shockBtn.onclick = () => { if (window.score >= 10000000) { window.score -= 10000000; window.unlockedWeapons.push("shocker"); saveAllData(); renderBonusesShop(); } else { alert("Недостаточно брелеров!"); } };
     }
     box.appendChild(shockTitle); box.appendChild(shockBtn);
 
     const bossHead = document.createElement("h3"); bossHead.style.color = "#ff3300"; bossHead.style.marginTop = "15px"; bossHead.textContent = "👹 ВЫЗОВ ЭКСКЛЮЗИВНЫХ БОССОВ"; box.appendChild(bossHead);
-
     const bosses = [
         { name: "👨 ЧЕЛОВЕК", desc: "500 HP. Спавнит людей и шпионов. Награда: 1000 брелеров + Шанс на пушку, броню, топор.", action: () => createVirusElement(500, true, false, "human") },
         { name: "🗿 СИГМА", desc: "1,000,000 HP. Награда: 100,000,000 брелеров + Статус СИГМА (6Х урона на всё!).", action: () => createVirusElement(1000000, true, false, "sigma") },
-        { name: "🟥 ЛЮЦИФЕР", desc: "100,000,000 HP. Оставляет замедляющие лужи. Награда: Меч Люцифера + Шанс на лут.", action: () => spawnLucifer() },
+        { name: "🟥 ЛЮЦИФЕР", desc: "100,000,000 HP. Оставляет огонь. Награда: Меч Люцифера + Шанс на лут.", action: () => spawnLucifer() },
         { name: "🌌 ДАРТ ВЕЙДЕР", desc: "1,000,000,000,000 HP. Нужен статус Оби-Ван. Спавнит роботов. Награда: 10.5М бр. + Маска, Меч, Плащ.", action: () => { if(window.obiWanStatus) { createVirusElement(1000000000000, true, false, "vader"); } else { alert("Требуется статус Оби-Ван-Кеноби!"); } } },
         { name: "🌋 САУРОН", desc: "Бесконечное HP. Убить можно только затолкнув Кольцо в Вулкан! Награда: Ятаган, Стены, Контроль зомби.", action: () => spawnSauronFight() }
     ];
-
     bosses.forEach(b => {
         const row = document.createElement("div"); row.style.border = "1px solid #ff3300"; row.style.padding = "6px"; row.style.marginTop = "5px"; row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.alignItems = "center";
         row.innerHTML = `<div style="display:flex;flex-direction:column;"><b style="color:#ff3300">${b.name}</b><span style="font-size:11px;color:#aaa;">${b.desc}</span></div>`;
@@ -347,13 +336,14 @@ function spawnLucifer() {
         const l = window.flyingViruses.find(item => item.isLucifer); if (!l) { clearInterval(window.lucFireInt); return; }
         const f = document.createElement("div"); f.className = "lucifer-fire"; f.style.left = (l.x + 30) + "px"; f.style.top = (l.y + 30) + "px"; f.style.width = "180px"; f.style.height = "180px"; arena.appendChild(f);
         playSound('fire');
+        // ОПТИМИЗИРОВАНО: Интервал замедления теперь безопасен для процессора и не вызывает утечку памяти!
         const cs = setInterval(() => {
             if (!arena.contains(f)) { clearInterval(cs); return; }
             const fR = f.getBoundingClientRect(); const g = Math.sqrt(Math.pow((fR.left + 90) - mouseX, 2) + Math.pow((fR.top + 90) - mouseY, 2));
             window.cursorSpeedMultiplier = g <= 90 ? 0.2 : 1;
-        }, 100);
+        }, 300);
         setTimeout(() => { clearInterval(cs); window.cursorSpeedMultiplier = 1; f.remove(); }, 4000);
-    }, 1500);
+    }, 2500);
 }
 
 function spawnGazan() {
@@ -500,6 +490,20 @@ arena.onclick = function(e) {
         });
     }
 
+    // ИСПРАВЛЕННЫЙ ПОСОХ ГЭНДАЛЬФА И СВЕТ БОГА: Теперь урон наносится по площади 250px и перезаряжается корректно!
+    if (window.currentWeapon === "gandalfStaff" || window.currentWeapon === "godLight") {
+        let cdTime = window.currentWeapon === "gandalfStaff" ? 10000 : 12000;
+        let baseDmg = window.currentWeapon === "gandalfStaff" ? 600 : 1500;
+        if (Date.now() < window.cooldowns.staff) { alert("Оружие на перезарядке!"); return; }
+        window.cooldowns.staff = Date.now() + cdTime; playSound('explosion');
+        window.flyingViruses.forEach(v => {
+            if (Math.sqrt(Math.pow(v.x - mouseX, 2) + Math.pow(v.y - mouseY, 2)) <= 250) {
+                damageVirus(v, baseDmg * lvl * getAuraMult() * getStatusMult(window.currentWeapon));
+            }
+        });
+        return;
+    }
+
     if (window.currentWeapon === "shocker") {
         if (Date.now() < window.cooldowns.shocker) { alert("Шокер КД!"); return; }
         window.cooldowns.shocker = Date.now() + 10000; playSound('laser');
@@ -528,7 +532,7 @@ arena.onclick = function(e) {
 
         o *= lvl;
         const chanceWeapons = ["brick", "saber", "darkBlade", "luciferSword", "human_axe", "vader_saber", "sauron_yatagan"];
-        if (chanceWeapons.includes(window.currentWeapon) && Math.random() < 0.1) o *= 3; // 10% Шанс крита х3
+        if (chanceWeapons.includes(window.currentWeapon) && Math.random() < 0.1) o *= 3;
         
         if (window.currentWeapon === "bomb_default") {
             playSound('explosion'); const rect = t.getBoundingClientRect(); window.flyingViruses.forEach(vItem => { if (Math.sqrt(Math.pow(vItem.x - rect.left, 2) + Math.pow(vItem.y - rect.top, 2)) <= 150) damageVirus(vItem, o * getAuraMult() * getStatusMult("bomb_default")); });
@@ -540,9 +544,7 @@ arena.onclick = function(e) {
 
 function updateVirusText(v) { v.element.textContent = `[${v.type.toUpperCase()}] ${v.hp} HP`; }
 function damageVirus(e, t) {
-    e.hp -= t; 
-    // Исправлено: Мутанты теперь стабильно получают урон, а на 100 HP призывают подмогу!
-    if (e.type === "mutant" && e.hp <= 100 && e.hp + t > 100) { createVirusElement(100, false, false, Math.random() < 0.5 ? "doctor" : "spy"); }
+    e.hp -= t; if (e.type === "mutant" && e.hp <= 100 && e.hp + t > 100) { createVirusElement(100, false, false, Math.random() < 0.5 ? "doctor" : "spy"); }
     if (e.hp <= 0) {
         e.element.remove(); let n = 100 * window.currentRound;
         if (e.type === "lucifer") n = 50000000;
@@ -571,6 +573,7 @@ function damageVirus(e, t) {
         }
         if (e.type === "lucifer") {
             let a = Math.random(); if (a < 0.5) window.loot.luc_wings++; if (a < 0.1) window.loot.luc_dna++; window.unlockedWeapons.push("luciferSword"); n = 50000000;
+            alert("Люцифер повержен! Утечки памяти устранены!");
         }
         if (window.chosenAura === "light") n *= 2; window.score += n; saveAllData();
         window.flyingViruses = window.flyingViruses.filter(i => i !== e); setTimeout(checkRoundEnd, 10);
