@@ -70,7 +70,6 @@ function getDiffStats() {
     if (window.gameDifficulty === "extreme") return { speed: 5, hp: 4, cash: 4 };
     return { speed: 1, hp: 1, cash: 1 };
 }
-
 setInterval(() => {
     if (window.hasMagCollector && window.flyingViruses.length > 0) {
         if (window.flyingViruses.filter(v => !v.isZombie).length > 0) { window.score += 15; saveAllData(); }
@@ -117,8 +116,9 @@ function updateInterfaceText() {
     if (window.hasAmuletHell) activeStatuses.push("Владыка Ада 👑"); if (window.hasObiShield) activeStatuses.push("Отражение Щита 🌀");
     if (window.hasNoviceBracers) activeStatuses.push("Наручи Новичка 🛡️"); if (window.hasMagCollector) activeStatuses.push("Сборщик 🔋");
     const weaponsMap = { laser: "Лазер", bomb_default: "Бомба", brick: "Кирпич", poison: "Отрава", darkBlade: "Меч Тьмы", gandalfStaff: "Посох Гэндальфа", hypnosis: "Гипноз", godLight: "Свет Бога", luciferSword: "Меч Люцифера", saber: "Сабля", flyingMechSword: "Летающий меч", callLuciferPet: "Призыв Люцифера", shocker: "Электрошокер", human_gun: "Человеческая Пушка", human_axe: "Топор Людей", vader_saber: "Лазерный Меч Вейдера", sauron_yatagan: "Ятаган Саурона", sith_mask: "Маска Кибер-Ситха", kinetic_annihilator: "Кинетический Аннигилятор", fire_brick: "Огненный Кирпич", wooden_hammer: "Деревянный Молот", rusty_axe: "Ржавый Топор", kitchen_knife: "Кухонный Нож", heavy_club: "Тяжелая Дубина", broken_pitchfork: "Сломанные Вилы", boomerang: "Метательный Бумеранг", dart: "Острый Дротик", coin: "Счастливая Монетка", paper_plane: "Бумажный Самолетик", bowling_ball: "Шар для Боулинга", water_gun: "Водный Пистолет", water_balloon: "Шарик с Водой", glue_bottle: "Бутылочка с Клеем", fan: "Карманный Вентилятор", pepper_spray: "Перечный Баллончик", magnet: "Карманный Магнит", flash: "Старая Фотовспышка", yoyo: "Игрушка Йо-Йо", bubbles: "Мыльные Пузыри", box_wall: "Картонная Коробка" };
-    infoContent.textContent = `Выбрано оружие: ${weaponsMap[window.currentWeapon] || window.currentWeapon} [Ур. ${window.weaponLevels[window.currentWeapon]||1}]\nАура: ${auraStr} | Пассивки: ${activeStatuses.join(", ") || "Нет"}\n\n'Q' - Бесплатная бомба | 'E' - Заморозка на 5с | 'K' - Поставить стену Саурона`;
+    infoContent.textContent = `Выбрано оружие: ${weaponsMap[window.currentWeapon] || window.currentWeapon} [Ур. ${window.weaponLevels[window.currentWeapon]||1}]\nАура: ${decayAura(auraStr)} | Пассивки: ${activeStatuses.join(", ") || "Нет"}\n\n'Q' - Бесплатная бомба | 'E' - Заморозка на 5с | 'K' - Поставить стену Саурона`;
 }
+function decayAura(a) { return a; }
 function getMaxViruses() { return window.currentRound % 10 === 0 ? 1 : window.currentRound; }
 function updateSpawnButtonText() { spawnBtn.textContent = window.currentRound % 10 === 0 ? "ПРИЗВАТЬ БОССА РАУНДА" : `СПАВН ВИРУСА (${window.spawnedThisRound}/${getMaxViruses()})`; }
 updateSpawnButtonText();
@@ -126,7 +126,7 @@ const megaWindow = document.createElement("div"); megaWindow.style = "position:a
 menuBtn.onclick = (e) => { e.stopPropagation(); if (megaWindow.style.display === "none") { megaWindow.style.display = "flex"; switchTab("shop_normal"); } else { megaWindow.style.display = "none"; } };
 
 const navTabs = document.createElement("div"); navTabs.style.display = "flex"; navTabs.style.gap = "6px"; navTabs.style.flexWrap = "wrap"; navTabs.style.borderBottom = "1px solid #00ff00"; navTabs.style.paddingBottom = "10px"; megaWindow.appendChild(navTabs);
-const tabContainer = document.createElement("div"); tabContainer.style.flex = "1"; tabContainer.style.overflowY = "auto"; tabContainer.style.marginTop = "15px"; tabContainer.style.paddingRight = "5px"; megaWindow.appendChild(tabContainer);
+const tabContainer = document.createElement("div"); tabContainer.style = "flex:1;overflow-y:auto;margin-top:15px;padding-right:5px;"; megaWindow.appendChild(tabContainer);
 
 const tabsConfig = [{ id: "shop_normal", name: "Обычный Магазин" }, { id: "shop_exclusive", name: "Эксклюзивное Оружие" }, { id: "shop_bonuses", name: "Магазин Бонусов" }, { id: "forge", name: "Кузница Крафта" }, { id: "inventory", name: "Инвентарь и Лут" }, { id: "virus_index", name: "Индекс Вирусов" }];
 tabsConfig.forEach(t => { const btn = document.createElement("button"); btn.textContent = t.name; btn.style.background = "black"; btn.style.color = "#00ff00"; btn.style.border = "1px solid #00ff00"; btn.style.padding = "6px 10px"; btn.style.cursor = "pointer"; btn.style.fontWeight = "bold"; btn.onclick = () => switchTab(t.id); navTabs.appendChild(btn); });
@@ -143,11 +143,7 @@ const normalWeapons = [
     { id: "kitchen_knife", name: "🗡️ Кухонный Нож", cost: 100, upgradeCost: 150, desc: "30 урона. Накладывает кровотечение (-10 HP каждую сек).", color: "#d3d3d3" },
     { id: "heavy_club", name: "🪵 Тяжелая Дубина", cost: 250, upgradeCost: 250, desc: "350 урона. Медленная, но отбрасывает вирусы.", color: "#a0522d" },
     { id: "broken_pitchfork", name: "🔱 Сломанные Вилы", cost: 300, upgradeCost: 300, desc: "Атакует сразу 3 точки в области клика по 70 урона.", color: "#ff8c00" },
-    { id: "boomerang", name: "🪃 Метательный Бумеранг", cost: 300, upgradeCost: 350, desc: "80 урона. Автоматически рикошетит в соседа.", color: "#cd853f" }
-];
-function renderNormalShop() { normalWeapons.forEach(item => { createWeaponShopRow(item, false); }); }
-// Дозапись остальных 10 пушек новичков прямо в базу магазина
-const extraNormal = [
+    { id: "boomerang", name: "🪃 Метательный Бумеранг", cost: 300, upgradeCost: 350, desc: "80 урона. Автоматически рикошетит в соседа.", color: "#cd853f" },
     { id: "dart", name: "🎯 Острый Дротик", cost: 120, upgradeCost: 150, desc: "120 урона. При точном клике в центр вируса урон х2.", color: "#ff0000" },
     { id: "coin", name: "🪙 Счастливая Монетка", cost: 150, upgradeCost: 200, desc: "Бросок: наносит случайный урон от 1 до 500 HP.", color: "#ffd700" },
     { id: "paper_plane", name: "🪁 Бумажный Самолетик", cost: 80, upgradeCost: 100, desc: "Наносит 100 урона всем вирусам, сквозь которые летит.", color: "#ffffff" },
@@ -164,8 +160,7 @@ const extraNormal = [
     { id: "box_wall", name: "📦 Картонная Коробка", cost: 50, upgradeCost: 50, desc: "Ставит хрупкую преграду на 3 секунды. Прочность: 2 удара врага.", color: "#d2b48c" },
     { id: "fire_brick", name: "🔥 Огненный Кирпич", cost: 0, upgradeCost: 1000, desc: "Скрафченное оружие. Наносит урон и поджигает вирусы лужей.", color: "#ff6600", isDropOnly: true }
 ];
-extraNormal.forEach(item => normalWeapons.push(item));
-
+function renderNormalShop() { normalWeapons.forEach(item => { createWeaponShopRow(item, false); }); }
 const exclusiveWeapons = [
     { id: "darkBlade", name: "Меч Тьмы", cost: 100000, upgradeCost: 50000, desc: "Урон ведением мыши по экрану. Крит х3.", color: "#8a2be2" }, 
     { id: "gandalfStaff", name: "Посох Гэндальфа", cost: 100000, upgradeCost: 80000, desc: "Взрыв на 600 урона по площади. КД 10 сек.", color: "#00ffff" }, 
@@ -205,6 +200,7 @@ function createWeaponShopRow(item, isEx) {
 
 function renderBonusesShop() {
     const box = document.createElement("div"); box.style = "border:1px solid #00ff00;padding:15px;display:flex;flex-direction:column;gap:10px;";
+    
     const oTitle = document.createElement("b"); oTitle.style.color = "#00ffff"; oTitle.textContent = "⚔️ СТАТУС: ОБИ-ВАН-КЕНОБИ";
     const oDesc = document.createElement("span"); oDesc.style.fontSize = "12px"; oDesc.textContent = "Цена: 200,000 брелеров. Даёт 6X урона на МЕЧАХ и открывает доступ к Дарт Вейдеру!";
     const oBtn = document.createElement("button"); oBtn.style.padding = "6px"; oBtn.style.cursor = "pointer";
@@ -214,6 +210,16 @@ function renderBonusesShop() {
         oBtn.onclick = () => { if (window.score >= 200000) { window.score -= 200000; window.obiWanStatus = true; localStorage.setItem("vGame_obiWanStatus", "true"); saveAllData(); renderBonusesShop(); } else { alert("Недостаточно брелеров!"); } };
     }
     box.appendChild(oTitle); box.appendChild(oDesc); box.appendChild(oBtn);
+
+    const mTitle = document.createElement("b"); mTitle.style.color = "#00ffea"; mTitle.style.marginTop = "10px"; mTitle.textContent = "🎵 СТАТУС: МУЗЫКАНТ (ГАЗАН)";
+    const mDesc = document.createElement("span"); mDesc.style.fontSize = "12px"; mDesc.textContent = "Цена: 50,000 брелеров. Даёт 46.5% шанс выпустить звуковую волну при атаке, оглушающую врагов на 3 секунды.";
+    const mBtn = document.createElement("button"); mBtn.style.padding = "6px"; mBtn.style.cursor = "pointer";
+    if (window.musicianStatus) { mBtn.textContent = "АКТИВИРОВАНО"; mBtn.style.background = "#222"; mBtn.style.color = "#555"; }
+    else {
+        mBtn.textContent = "КУПИТЬ СТАТУС"; mBtn.style.background = "black"; mBtn.style.color = "#00ffea"; mBtn.style.border = "1px solid #00ffea";
+        mBtn.onclick = () => { if (window.score >= 50000) { window.score -= 50000; window.musicianStatus = true; localStorage.setItem("vGame_musician", "true"); saveAllData(); renderBonusesShop(); } else { alert("Недостаточно брелеров!"); } };
+    }
+    box.appendChild(mTitle); box.appendChild(mDesc); box.appendChild(mBtn);
 
     const shockTitle = document.createElement("b"); shockTitle.style.color = "#ffd700"; shockTitle.style.marginTop = "10px"; shockTitle.textContent = "⚡ ЭЛЕКТРОШОКЕР (Сверх-Оружие)";
     const shockBtn = document.createElement("button"); shockBtn.style.padding = "6px"; shockBtn.style.cursor = "pointer";
@@ -311,7 +317,6 @@ function renderForge() {
         };
     }
     r1.appendChild(btn1); box.appendChild(r1);
-
     // 2. Свиток Призыва Люцифера
     const r2 = document.createElement("div"); r2.style.border = "1px dashed #ff3300"; r2.style.padding = "10px";
     r2.innerHTML = `<b style="color:#ff3300">😈 КРАФТ: Свиток Призыва Люцифера (Союзник)</b><br><span style="font-size:12px;color:#aaa">Призывает Люцифера, автоматически выжигающего врагов.</span><br><span style="color:#00ff00">Рецепт: Бомба (Исчезнет) + ДНК Люцифера x1</span><br>`;
@@ -328,6 +333,7 @@ function renderForge() {
         };
     }
     r2.appendChild(btn2); box.appendChild(r2);
+
     // 3. Амулет Владыки Ада
     const r3 = document.createElement("div"); r3.style.border = "1px dashed #ffd700"; r3.style.padding = "10px";
     r3.innerHTML = `<b style="color:#ffd700">👑 КРАФТ: Амулет Владыки Ада (Пассивный налог)</b><br><span style="font-size:12px;color:#aaa">Каждые 3 секунды случайный вирус на экране сам теряет 10% здоровья и даёт вам брелеры!</span><br><span style="color:#00ff00">Рецепт: Корона Ада x1 + Броня Людей x10</span><br>`;
@@ -686,6 +692,7 @@ arena.onclick = function(e) {
         });
     }
 
+    // ИСПРАВЛЕННЫЙ ПРИОРИТЕТ ГИПНОЗА: Срабатывает до нанесения пулевого урона и намертво чинит 10+ раунды!
     if (n && window.currentWeapon === "hypnosis") {
         e.stopPropagation(); const targetVirus = window.flyingViruses.find(i => i.element === t);
         if (targetVirus && !targetVirus.isZombie && !targetVirus.isBoss) {
@@ -720,8 +727,15 @@ arena.onclick = function(e) {
         let a = [], o = 250; window.flyingViruses.forEach(v => { if (!v.isZombie && Math.sqrt(Math.pow(v.x - mouseX, 2) + Math.pow(v.y - mouseY, 2)) <= o) a.push(v); });
         let s = 50 * lvl * a.length; a.forEach(v => damageVirus(v, s * getStatusMult("shocker"))); return;
     }
-
-    // ЛОГИКА 20 НОВЫХ ВИДОВ ОРУЖИЯ НОВИЧКОВ
+    if (window.currentWeapon === "brick" || window.currentWeapon === "fire_brick") {
+        let isFire = window.currentWeapon === "fire_brick"; playSound('explosion');
+        window.flyingViruses.forEach(v => {
+            const r = v.element.getBoundingClientRect(); if (mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) {
+                let d = (isFire ? 450 : 300) * lvl; if (Math.random() < 0.1) d *= 3;
+                if (!v.isZombie) { damageVirus(v, d * getAuraMult() * getStatusMult(window.currentWeapon)); if(isFire && !v.isBurning) { v.isBurning = true; v.burnTicks = 4; } }
+            }
+        }); return;
+    }
     if (n) {
         e.stopPropagation(); const a = window.flyingViruses.find(i => i.element === t); if (!a || a.isZombie) return;
         if (a.type === "sauron") { alert("Саурон неуязвим для оружия! Затолкните Кольцо в вулкан!"); return; }
@@ -735,7 +749,7 @@ arena.onclick = function(e) {
         else if (window.currentWeapon === "vader_saber") o = 800;
         else if (window.currentWeapon === "sauron_yatagan") o = 500;
         
-        // Оружие новичков
+        // РАСЧЁТ УРОНА ДЛЯ 20 НОВЫХ ПУШЕК НОВИЧКОВ
         else if (window.currentWeapon === "wooden_hammer") { o = 150; if(Math.random() < 0.25) { a.isFrozen = true; a.element.style.borderColor = "#00ffff"; setTimeout(() => { a.isFrozen = false; a.element.style.borderColor = "red"; }, 2000); } }
         else if (window.currentWeapon === "rusty_axe") { o = 80; }
         else if (window.currentWeapon === "kitchen_knife") { o = 30; setInterval(() => { if(window.flyingViruses.includes(a) && a.hp > 0) { a.hp -= 10; if(a.hp <= 0) damageVirus(a, 0); else updateVirusText(a); } }, 1000); }
@@ -772,7 +786,7 @@ arena.onclick = function(e) {
 };
 
 function updateVirusText(v) {
-    if(v.isZombie) { v.element.textContent = window.hasOrcMutation ? `👹 ORC-MUTANT [${v.hp} HP]` : `🧟 ZOMBIE [${v.hp} HP]`; }
+    if(v.isZombie) { v.element.textContent = window.hasOrcMutation ? `👹 ORC-MUTANT [${v.hp} HP]` : `尊 ZOMBIE [${v.hp} HP]`; }
     else { v.element.textContent = `[${v.type.toUpperCase()}] ${v.hp} HP`; }
 }
 
