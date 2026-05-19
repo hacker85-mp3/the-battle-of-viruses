@@ -30,9 +30,11 @@
 <div id="mcdRestaurantEl" class="mcd-restaurant"><br>🍟 Макдоналдс 🍔<br><span id="mcdClients" style="font-size:10px;color:#FFC72C">Клиентов: 0</span><br><span style="font-size:9px;color:#aaa">Лечит зомби</span></div>
 <script>
 const arena = document.createElement("div"); arena.style.position = "fixed"; arena.style.top = "0"; arena.style.left = "0"; arena.style.width = "100vw"; arena.style.height = "100vh"; arena.style.backgroundColor = "black"; arena.style.zIndex = "9990"; arena.style.overflow = "hidden"; document.body.appendChild(arena);
-function playSound(type) {
-    // Временная заглушка, чтобы игра не выдавала ошибки, если нет аудиофайлов
-    console.log("Воспроизведение звука:", type);
+function getDiffStats() {
+    if (window.gameDifficulty === "medium") return { speed: 1.5, hp: 1.5, cash: 1.5 };
+    if (window.gameDifficulty === "hard") return { speed: 2, hp: 2, cash: 2 };
+    if (window.gameDifficulty === "extreme") return { speed: 5, hp: 4, cash: 4 };
+    return { speed: 1, hp: 1, cash: 1 };
 }
 // Сохранения основных ресурсов
 window.currentRound = 1;
