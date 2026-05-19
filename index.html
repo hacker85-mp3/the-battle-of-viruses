@@ -571,16 +571,33 @@ arena.onmouseup = () => {
         }
     }
 };
-
 function handleMouseTraces() {
     if (isDraggingRing && ringEl) { ringEl.style.left = realMouseX + "px"; ringEl.style.top = realMouseY + "px"; }
+    
+    // ИСПРАВЛЕНО: Полный перерасчет урона Меча Тьмы и Меча Люцифера при ведении мыши!
     window.flyingViruses.forEach(v => {
+        if (!v.element) return;
         const r = v.element.getBoundingClientRect();
-        if (mouseX >= r.left && mouseX <= r.right && mouseY >= r.top && mouseY <= r.bottom) {
+        if (realMouseX >= r.left && realMouseX <= r.right && realMouseY >= r.top && realMouseY <= r.bottom) {
             if (window.currentWeapon === "darkBlade") {
-                let d = 15 * (window.weaponLevels.darkBlade || 1); if (!v.isZombie && !v.isHorcrux) damageVirus(v, d * getAuraMult() * getStatusMult("darkBlade"));
+                let lvl = window.weaponLevels.darkBlade || 1;
+                let d = 25 * lvl; // Базовый урон Меча Тьмы
+                if (Math.random() < 0.1) d *= 3; // Крит х3
+                if (!v.isZombie && !v.isHorcrux) {
+                    playSound('laser');
+                    damageVirus(v, d * getAuraMult() * getStatusMult("darkBlade"));
+                }
             }
-            if (window.currentWeapon === "luciferSword" && !v.isZombie && !v.isHorcrux && !v.isBurning) { v.isBurning = true; v.burnTicks = 5; }
+            if (window.currentWeapon === "luciferSword") {
+                let lvl = window.weaponLevels.luciferSword || 1;
+                let d = 50 * lvl; // Базовый урон Меча Люцифера
+                if (Math.random() < 0.1) d *= 3; // Крит х3
+                if (!v.isZombie && !v.isHorcrux) {
+                    playSound('laser');
+                    damageVirus(v, d * getAuraMult() * getStatusMult("luciferSword"));
+                    if (!v.isBurning) { v.isBurning = true; v.burnTicks = 5; }
+                }
+            }
         }
     });
 }
@@ -590,6 +607,19 @@ function getStatusMult(wId) {
     let m = 1; if (window.sigmaStatus) m *= 6;
     if (window.obiWanStatus && ["darkBlade", "luciferSword", "vader_saber", "saber"].includes(wId)) m *= 6; return m;
 }
+
+// Таймер горения от Меча Люцифера
+setInterval(() => {
+    window.flyingViruses.forEach(v => {
+        if (v.isBurning && v.burnTicks > 0 && !v.isZombie) {
+            v.burnTicks--; v.element.style.backgroundColor = "#ff4500";
+            let lvl = window.weaponLevels.luciferSword || 1;
+            let t = 100 * lvl; 
+            damageVirus(v, t * getStatusMult("luciferSword")); 
+            if (v.burnTicks <= 0) { v.isBurning = false; v.element.style.backgroundColor = "black"; }
+        }
+    });
+}, 1000);
 
 setInterval(() => {
     const z = window.flyingViruses.filter(e => e.isZombie); const n = window.flyingViruses.filter(e => !e.isZombie && !e.isHorcrux);
@@ -604,12 +634,13 @@ setInterval(() => {
     });
 }, 1000);
 
+// ИСПРАВЛЕНО: Клик по экрану больше не вызывает ошибок и обрабатывает все пушки новичков и боссов!
 arena.onclick = function(e) {
     const t = e.target; let lvl = window.weaponLevels[window.currentWeapon] || 1;
     const isV = t && t.textContent && window.flyingViruses.some(v => v.element === t);
     
     if (window.currentWeapon === "hypnosis") {
-        const targetVirus = window.flyingViruses.find(i => i.element === t || i.element === e.target);
+        const targetVirus = window.flyingViruses.find(i => i.element === t);
         if (targetVirus && !targetVirus.isZombie && !targetVirus.isBoss && !targetVirus.isHorcrux) {
             e.stopPropagation(); targetVirus.isZombie = true; targetVirus.hp = window.sauronStatus ? window.zombieSettings.hp : 200 * lvl; targetVirus.maxHp = targetVirus.hp;
             targetVirus.element.style.border = "2px solid #00ff00"; targetVirus.element.style.color = "#00ff00"; updateVirusText(targetVirus); setTimeout(checkRoundEnd, 20); return;
@@ -637,7 +668,7 @@ arena.onclick = function(e) {
         else if (window.currentWeapon === "crab_claws") { o = 1000; a.isFrozen = true; setTimeout(()=>a.isFrozen=false, 2000); }
         
         o *= lvl;
-        if (window.statusFat) { a.speedX = (a.x - mouseX)*0.8; a.speedY = (a.y - mouseY)*0.8; }
+        if (window.statusFat) { a.speedX = (a.x - realMouseX)*0.8; a.speedY = (a.y - realMouseY)*0.8; }
         if (window.currentWeapon === "bomb_default") {
             playSound('explosion'); window.flyingViruses.forEach(v => { if(!v.isZombie && !v.isHorcrux) damageVirus(v, o*getAuraMult()*getStatusMult("bomb_default")); });
         } else {
@@ -654,7 +685,7 @@ window.onkeydown = function(e) {
     }
     if (k === 'l' || k === 'д') {
         if(Date.now() < window.cooldowns.spellL) return; window.cooldowns.spellL = Date.now()+10000;
-        window.flyingViruses.forEach(v => { if(!v.isZombie && !v.isHorcrux) { v.speedX = (v.x - mouseX)*1.5; v.speedY = (v.y - mouseY)*1.5; damageVirus(v, 250); } });
+        window.flyingViruses.forEach(v => { if(!v.isZombie && !v.isHorcrux) { v.speedX = (v.x - realMouseX)*1.5; v.speedY = (v.y - realMouseY)*1.5; damageVirus(v, 250); } });
     }
     if (k === 'o' || k === 'щ') {
         if(Date.now() < window.cooldowns.spellO) return; window.cooldowns.spellO = Date.now()+30000;
