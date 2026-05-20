@@ -280,14 +280,54 @@ const advancedTabsConfig = [
     { id: "helpers_upgrades", name: "👥 Прокачка Помощников" },
     { id: "boss_index", name: "🦠 Индекс Боссов" }
 ];
-advancedTabsConfig.forEach(t => { const btn = document.createElement("button"); btn.textContent = t.name; btn.style = "background:black;color:#ffd700;border:1px solid #ffd700;padding:6px 10px;cursor:pointer;font-weight:bold;font-family:monospace;"; btn.onclick = () => switchTab(t.id); navTabs.appendChild(btn); });
+// СОЕДИНИТЕЛЬНЫЙ МОСТ: Функция генерации плиток для инвентаря (ФИКС ОПУСТЕВШЕГО ОКНА!)
+function createInvWeaponBtn(wId, namesMap, currentGroupName) {
+    const a = document.createElement("button"); a.style = "padding:10px;font-family:monospace;font-weight:bold;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;";
+    const isFav = window.favoriteWeapons.includes(wId); a.textContent = (namesMap[wId] || wId) + (isFav ? " ⭐" : "");
+    if (window.currentWeapon === wId) { a.style.background = "#00ff00"; a.style.color = "black"; a.style.border = "2px solid #fff"; }
+    else { a.style.background = "#111"; a.style.color = "#00ff00"; a.style.border = "1px solid #00ff00"; }
+    
+    a.onclick = (e) => { if(e.target.tagName === "SELECT") return; window.currentWeapon = wId; updateInterfaceText(); renderInventory(); };
 
-const oldSwitchTab = switchTab;
+    if (window.unlockedWeapons.includes("mcd_tray") && wId !== "laser") {
+        const moveSel = document.createElement("select"); moveSel.style = "background:black;color:#FFC72C;font-size:10px;border:1px solid #FFC72C;margin-top:2px;width:100%;font-family:monospace;";
+        const defOpt = document.createElement("option"); defOpt.textContent = "== В группу =="; defOpt.selected = !currentGroupName; moveSel.appendChild(defOpt);
+        const noGrpOpt = document.createElement("option"); noGrpOpt.value = "REMOVE_FROM_GROUPS"; noGrpOpt.textContent = "❌ Без группы"; moveSel.appendChild(noGrpOpt);
+        
+        for (let gName in window.weaponGroups) {
+            const o = document.createElement("option"); o.value = gName; o.textContent = gName; if(gName === currentGroupName) o.selected = true; moveSel.appendChild(o);
+        }
+        moveSel.onchange = () => {
+            if (!window.weaponGroups) window.weaponGroups = {};
+            for (let g in window.weaponGroups) { window.weaponGroups[g] = window.weaponGroups[g].filter(x => x !== wId); }
+            if (moveSel.value !== "REMOVE_FROM_GROUPS" && moveSel.value !== "== В группу ==") { window.weaponGroups[moveSel.value].push(moveSel.value); }
+            localStorage.setItem("vGame_groups", JSON.stringify(window.weaponGroups)); renderInventory();
+        };
+        a.appendChild(moveSel);
+    }
+    return a;
+}
+
+// Новая навигация: Добавлены вкладки Прокачки Помощников и Индекса Боссов (Строго без дубликатов 'const'!)
+window.advancedTabsConfig = [
+    { id: "helpers_upgrades", name: "👥 Прокачка Помощников" },
+    { id: "boss_index", name: "🦠 Индекс Боссов" }
+];
+
+window.advancedTabsConfig.forEach(t => { 
+    const btn = document.createElement("button"); 
+    btn.textContent = t.name; 
+    btn.style = "background:black;color:#ffd700;border:1px solid #ffd700;padding:6px 10px;cursor:pointer;font-weight:bold;font-family:monospace;"; 
+    btn.onclick = () => switchTab(t.id); 
+    navTabs.appendChild(btn); 
+});
+
+window.oldSwitchTab = typeof window.oldSwitchTab === "function" ? window.oldSwitchTab : switchTab;
 switchTab = function(tabId) {
     tabContainer.innerHTML = "";
     if (tabId === "helpers_upgrades") renderHelpersUpgrades();
     else if (tabId === "boss_index") renderBossIndex();
-    else oldSwitchTab(tabId);
+    else window.oldSwitchTab(tabId);
 };
 
 // СИСТЕМНЫЙ ПРИЗЫВ СВЕРХ-БОССОВ
