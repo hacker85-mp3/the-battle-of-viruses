@@ -479,7 +479,7 @@ function renderLab() {
     ];
     dnaRecipes.forEach(r => {
         const row = document.createElement("div"); row.style = "display:flex;justify-content:space-between;align-items:center;border:1px dashed #ba55d3;padding:6px;background:black;";
-        let reqTxt = []; for(let k in r.req) { const names={dna_normal:"🟢Обыч", dna_spy:"残留🟣Шпион", dna_doctor:"🩺🟡Докт", dna_mutant:"🧬🔴Мут", luc_dna:"🟥Люци"}; reqTxt.push(`${names[k]} x${r.req[k]}`); }
+        let reqTxt = []; for(let k in r.req) { const names={dna_normal:"🟢Обыч", dna_spy:"🟣Шпион", dna_doctor:"🩺🟡Докт", dna_mutant:"🧬🔴Мут", luc_dna:"🟥Люци"}; reqTxt.push(`${names[k]} x${r.req[k]}`); }
         row.innerHTML = `<div style="display:flex;flex-direction:column;"><b>${r.name}</b><span style="font-size:11px;color:#aaa;">${r.desc}</span><span style="color:#da70d6;font-size:11px;">Рецепт: ${reqTxt.join(" + ")}</span></div>`;
         const btn = document.createElement("button"); btn.style = "padding:5px 8px;font-family:monospace;cursor:pointer;";
         if (r.active) { btn.textContent = "ИЗУЧЕНО"; btn.style.background = "#222"; btn.style.color = "#555"; btn.disabled = true; }
@@ -516,33 +516,10 @@ function renderHelpersUpgrades() {
     });
     tabContainer.appendChild(box);
 }
-
-function renderBossIndex() {
-    const box = document.createElement("div"); box.style = "border:2px solid #8a2be2;padding:15px;background:#140026;display:flex;flex-direction:column;gap:10px;";
-    box.innerHTML = `<h2 style="color:#a855f7;margin:0;">🦠 СИСТЕМНЫЙ ИНДЕКС ВСЕХ БОССОВ</h2><p style="color:#aaa;font-size:11px;margin:0;">Изучайте слабости лидеров арен:</p>`;
-    const bossIndexData = [
-        { name: "👨 ЧЕЛОВЕК", desc: "500 HP. Спавнит армию защитных Роботов. Пока Роботы живы, его лут заблокирован.", color: "#6a5acd" },
-        { name: "🎵 ГАЗАН", desc: "1,000,000 HP. Каждые 2 секунды телепортируется по карте и оглушает волнами.", color: "#00ffff" },
-        { name: "🗿 СИГМА", desc: "1,000,000 HP. На 20% HP мутирует в Гигачада: его скорость растёт в 3 раза.", color: "#ffd700" },
-        { name: "🟥 ЛЮЦИФЕР", desc: "100,000,000 HP. Изрыгает адских Демонов. Иммунитет к отравлению.", color: "#ff4500" },
-        { name: "🌌 ДАРТ ВЕЙДЕР", desc: "1 ТРИЛЛИОН HP. Требует статус Оби-Ван Кеноби для пробития брони.", color: "#ff0000" },
-        { name: "👁️ САУРОН", desc: "Бесконечное HP. Убить можно только затолкнув его золотое Кольцо в Вулкан.", color: "#4b0082" },
-        { name: "🪄 ВОЛАН-ДЕ-МОРТ", desc: "1 ТРИЛЛИОН HP. Неуязвим, пока на арене летают 3 Крестража.", color: "#e0eeee" },
-        { name: "🤖 ПРОТОТИП 1006", desc: "1,000,000,000 HP. На 50% HP разделяется на Хагги и Мамочку Длинные Ноги.", color: "#0000ff" },
-        { name: "🍔 McDONALD", desc: "100М HP + 300М Щит. Вызывает работников, откармливающих колой вирусы.", color: "#DA291C" },
-        { name: "🥷 НИНДЗЯ «ТЕНЬ КЛАНА»", desc: "50,000,000 HP. Уходит в полную невидимость каждые 5с. Бросает сюрикены.", color: "#da70d6" },
-        { name: "👑 БОСС КОРОЛЬ", desc: "10,000 HP + 100,000 Броня. Сидит в Замке. Гвардия лечит его при смерти.", color: "#ffd700" }
-    ];
-    bossIndexData.forEach(b => {
-        const d = document.createElement("div"); d.style = "border:1px solid #333;padding:6px;background:black;";
-        d.innerHTML = `<b style="color:${b.color};">${b.name}</b> — <span style="font-size:12px;color:#eee;">${b.desc}</span>`; box.appendChild(d);
-    });
-    tabContainer.appendChild(box);
-}
 function renderInventory() {
     tabContainer.innerHTML = "";
     
-    // МЕНЮ ВЛАДЫКИ САУРОНА (Появляется в инвентаре, если включен статус Саурона)
+    // МЕНЮ ВЛАДЫКИ САУРОНА (ФИКС БАГА NULL: Полная защита от сбоев вывода информации!)
     if (window.sauronStatus) {
         const sauronBox = document.createElement("div"); 
         sauronBox.style = "border:2px solid #4b0082;padding:12px;margin-bottom:15px;background:#110022;box-shadow: 0 0 15px #4b0082;";
