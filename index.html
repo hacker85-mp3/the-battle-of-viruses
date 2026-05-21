@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arena Viruses: Глобальный RPG Релиз v7</title>
+    <title>Arena Viruses: Глобальный RPG Релиз v7.1</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; user-select: none; font-family: monospace; }
-        
-        /* Стили динамических арен (Обнова v7) */
-        .arena-bg { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 9988; transition: background 1s ease, filter 0.5s ease; }
+        .arena-bg { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 9988; transition: background 1s ease; }
         .arena-matrix { background: radial-gradient(circle, #001100 0%, #000000 100%); }
         .arena-hell { background: radial-gradient(circle, #220500 0%, #000000 100%); }
         .arena-space { background: radial-gradient(circle, #000522 0%, #000000 100%); }
         .arena-castle { background: radial-gradient(circle, #1a1a00 0%, #000000 100%); }
-        
-        /* Визуальные эффекты */
-        .lucifer-fire { position: absolute; background: radial-gradient(circle, #ff4500 0%, transparent 70%); pointer-events: none; z-index: 9991; animation: burn 0.5s infinite alternate; }
         .sound-wave { position: absolute; border: 4px double #00ffff; border-radius: 50%; pointer-events: none; z-index: 9992; animation: wave 0.8s linear forwards; }
         .volcano { position: absolute; bottom: 20px; right: 20px; width: 120px; height: 100px; background: linear-gradient(to top, #333, #555); clip-path: polygon(20% 100%, 40% 30%, 60% 30%, 80% 100%); border-top: 15px solid red; z-index: 9991; display: none; text-align: center; color: white; font-weight: bold; line-height: 140px; box-shadow: 0 0 30px red; }
         .game-wall { position: absolute; width: 20px; height: 140px; background: linear-gradient(to bottom, #00ffea, #4b0082); border: 2px solid #fff; box-shadow: 0 0 20px #00ffea; z-index: 9993; color: white; font-size: 10px; font-weight: bold; text-align: center; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; }
@@ -23,18 +18,13 @@
         .king-castle { position: absolute; border: 5px double #ffd700; background: #444; color: #fff; font-weight: bold; text-align: center; z-index: 9992; box-shadow: 0 0 25px #ffd700; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; }
         .king-throne { position: absolute; width: 40px; height: 40px; background: #ffd700; border: 2px solid #fff; border-radius: 4px; box-shadow: 0 0 15px #ffd700; z-index: 9991; text-align: center; line-height: 40px; font-size: 20px; cursor: pointer; }
         .king-mine { position: absolute; width: 50px; height: 50px; background: #222; border: 3px dashed #cd853f; box-shadow: 0 0 10px #cd853f; z-index: 9991; text-align: center; line-height: 50px; font-size: 18px; color: #fff; }
-        .king-trap { position: absolute; width: 35px; height: 35px; background: #555; border: 2px solid #333; z-index: 9991; text-align: center; line-height: 35px; font-size: 16px; }
-        
-        /* Сетка RPG рюкзака */
         .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 10px; }
-        .inv-slot { background: #0d0d0d; border: 2px solid #00ff00; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; min-height: 95px; color: #00ff00; font-size: 12px; box-shadow: inset 0 0 10px rgba(0,255,0,0.2); }
-        .inv-slot:hover { border-color: #00ffff; color: #00ffff; box-shadow: 0 0 12px #00ffff; }
-        
-        @keyframes burn { from { transform: scale(1); opacity: 0.6; } to { transform: scale(1.2); opacity: 0.9; } }
+        .inv-slot { background: #0d0d0d; border: 2px solid #00ff00; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; min-height: 95px; color: #00ff00; font-size: 12px; }
+        .inv-slot:hover { border-color: #00ffff; color: #00ffff; box-shadow: 0 0 10px #00ffff; }
+        /* НЕОНОВЫЙ ФИКС: Выбранная плитка теперь ярко светится белым! */
+        .inv-slot-active { border-color: #ffffff !important; color: #ffffff !important; box-shadow: 0 0 15px #ffffff !important; background: #1c1c1c !important; }
         @keyframes wave { from { transform: scale(0.1); opacity: 1; } to { transform: scale(3); opacity: 0; } }
-        @keyframes gigachad-pulse { 0% { box-shadow: 0 0 15px #ff0000; } 100% { box-shadow: 0 0 50px #ff0000; background-color: rgba(50,0,0,0.4); } }
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); }
         ::-webkit-scrollbar-thumb { background: #00ff00; border-radius: 3px; }
     </style>
 </head>
@@ -42,11 +32,9 @@
 <div id="arenaBg" class="arena-bg arena-matrix"></div>
 <div id="volcanoEl" class="volcano">ВУЛКАН</div>
 <div id="mcdRestaurantEl" class="mcd-restaurant"><br>🍟 Макдоналдс 🍔<br><span id="mcdClients" style="font-size:10px;color:#FFC72C">Клиентов: 0</span><br><span style="font-size:9px;color:#aaa">Лечит зомби</span></div>
-
 <script>
 const arena = document.createElement("div"); arena.style.position = "fixed"; arena.style.top = "0"; arena.style.left = "0"; arena.style.width = "100vw"; arena.style.height = "100vh"; arena.style.zIndex = "9990"; arena.style.overflow = "hidden"; document.body.appendChild(arena);
 
-// Аудио-Чип (Синтезатор звуков v7)
 window.audioCtx = null;
 function initAudio() { if(!window.audioCtx) window.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 function playSynthSound(freq, type, duration) {
@@ -54,59 +42,24 @@ function playSynthSound(freq, type, duration) {
 }
 function playSound(action) { if(action === 'click') playSynthSound(600, 'sine', 0.1); if(action === 'bomb') playSynthSound(130, 'sawtooth', 0.4); if(action === 'freeze') playSynthSound(750, 'triangle', 0.3); }
 
-// Инициализация баз данных
-window.currentRound = 1;
-window.score = parseInt(localStorage.getItem("vGame_brelers")) || 0;
-window.dollars = parseInt(localStorage.getItem("vGame_dollars")) || 0; 
-window.gameDifficulty = localStorage.getItem("vGame_diff") || "easy";
-window.chosenAura = localStorage.getItem("vGame_aura") || "none";
+// Системная память ресурсов
+window.currentRound = 1; window.score = parseInt(localStorage.getItem("vGame_brelers")) || 0; window.dollars = parseInt(localStorage.getItem("vGame_dollars")) || 0; window.gameDifficulty = localStorage.getItem("vGame_diff") || "easy"; window.chosenAura = localStorage.getItem("vGame_aura") || "none";
+window.musicianStatus = localStorage.getItem("vGame_musician") === "true"; window.sigmaStatus = localStorage.getItem("vGame_sigmaStatus") === "true"; window.obiWanStatus = localStorage.getItem("vGame_obiWanStatus") === "true"; window.sauronStatus = localStorage.getItem("vGame_sauronStatus") === "true"; window.statusFat = localStorage.getItem("vGame_statusFat") === "true"; window.ninjaStatus = localStorage.getItem("vGame_ninjaStatus") === "true"; window.netRadiusMultiplier = parseInt(localStorage.getItem("vGame_netMult")) || 1;
+window.dnaRegenActive = localStorage.getItem("vGame_dnaRegen") === "true"; window.creatureUnlocked = localStorage.getItem("vGame_creature") === "true";
+window.labLevel = parseInt(localStorage.getItem("vGame_labLvl")) || 1; window.labTubes = parseInt(localStorage.getItem("vGame_labTubes")) || 0;
+window.zombieSettings = JSON.parse(localStorage.getItem("vGame_zombieSettings")) || { hp: 100, speed: 5 }; window.favoriteWeapons = JSON.parse(localStorage.getItem("vGame_favorites")) || []; window.unlockedWeapons = JSON.parse(localStorage.getItem("vGame_weapons")) || ["laser", "bomb_default", "catcher_net"]; window.weaponGroups = JSON.parse(localStorage.getItem("vGame_groups")) || {}; window.upgradesHelpers = JSON.parse(localStorage.getItem("vGame_upgradesHelpers")) || { zombie_armor: 0, ninja_damage: 0, guard_damage: 0 }; window.weaponLevels = JSON.parse(localStorage.getItem("vGame_levels")) || { laser:1, bomb_default:1, brick:1, poison:1, darkBlade:1, gandalfStaff:1, hypnosis:1, luciferSword:1, saber:1, human_gun:1, vader_saber:1, sauron_yatagan:1, magic_wand:1, ninja_shuriken:1, ninja_katana:1, king_crown:1, catcher_net:1 };
 
-window.musicianStatus = localStorage.getItem("vGame_musician") === "true";
-window.unlocked100Round = localStorage.getItem("vGame_r100_win") === "true";
-window.sigmaStatus = localStorage.getItem("vGame_sigmaStatus") === "true";
-window.obiWanStatus = localStorage.getItem("vGame_obiWanStatus") === "true";
-window.sauronStatus = localStorage.getItem("vGame_sauronStatus") === "true";
-window.statusFat = localStorage.getItem("vGame_statusFat") === "true";
-window.ninjaStatus = localStorage.getItem("vGame_ninjaStatus") === "true";
-window.netRadiusMultiplier = parseInt(localStorage.getItem("vGame_netMult")) || 1;
-
-window.dnaRegenActive = localStorage.getItem("vGame_dnaRegen") === "true";
-window.dnaInvisActive = localStorage.getItem("vGame_dnaInvis") === "true";
-window.dnaSplitActive = localStorage.getItem("vGame_dnaSplit") === "true";
-window.dnaTaxesActive = localStorage.getItem("vGame_dnaTaxes") === "true";
-window.creatureUnlocked = localStorage.getItem("vGame_creature") === "true"; 
-
-window.hasAmuletHell = localStorage.getItem("vGame_amuletHell") === "true";
-window.hasObiShield = localStorage.getItem("vGame_obiShield") === "true";
-window.hasOrcMutation = localStorage.getItem("vGame_orcMutation") === "true";
-window.hasNoviceBracers = localStorage.getItem("vGame_noviceBracers") === "true";
-window.hasMagCollector = localStorage.getItem("vGame_magCollector") === "true";
-
-window.labLevel = parseInt(localStorage.getItem("vGame_labLvl")) || 1;
-window.labTubes = parseInt(localStorage.getItem("vGame_labTubes")) || 0;
-window.ninjaHired = localStorage.getItem("vGame_ninjaHired") === "true"; 
-
-window.zombieSettings = JSON.parse(localStorage.getItem("vGame_zombieSettings")) || { hp: 100, speed: 5 };
-window.favoriteWeapons = JSON.parse(localStorage.getItem("vGame_favorites")) || [];
-window.unlockedWeapons = JSON.parse(localStorage.getItem("vGame_weapons")) || ["laser", "bomb_default", "catcher_net"]; 
-window.weaponGroups = JSON.parse(localStorage.getItem("vGame_groups")) || {};
-window.upgradesHelpers = JSON.parse(localStorage.getItem("vGame_upgradesHelpers")) || { zombie_armor: 0, ninja_damage: 0, guard_damage: 0 };
-window.weaponLevels = JSON.parse(localStorage.getItem("vGame_levels")) || { laser:1, bomb_default:1, brick:1, poison:1, darkBlade:1, gandalfStaff:1, hypnosis:1, godLight:1, luciferSword:1, saber:1, flyingMechSword:1, callLuciferPet:1, shocker:1, human_gun:1, vader_saber:1, sauron_yatagan:1, magic_wand:1, huggy_hand:1, mommy_hand:1, crab_claws:1, mcd_tray:1, ninja_shuriken:1, ninja_katana:1, king_crown:1, king_castle_item:1, king_throne_item:1, catcher_net:1 };
-
-// Надежная блокировка NULL-ресурсов
 window.loot = JSON.parse(localStorage.getItem("vGame_loot")) || {};
 const defaultLootList = { luc_wings:0, luc_dna:0, luc_crown:0, human_armor:0, vader_mask:0, vader_cloak:0, sauron_wall:1, mcd_building:0, crown_loot:0, castle_loot:0, throne_loot:0, mine_count:0, prisoner_count:0, dna_normal:0, dna_spy:0, dna_doctor:0, dna_mutant:0, captured_viruses:0, vaccine_br1:0, crystals:0 };
 for (let key in defaultLootList) { if (window.loot[key] === undefined || window.loot[key] === null) { window.loot[key] = defaultLootList[key]; } }
 
 window.currentWeapon = "laser"; window.flyingViruses = []; window.gameWalls = []; window.kingThrones = []; window.scouts = []; window.spawnedThisRound = 0;
 let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2, realMouseX = mouseX, realMouseY = mouseY;
-
-// Постоянно обновляем координаты realMouse при движении по арене
-window.onmousemove = (e) => { realMouseX = e.clientX; realMouseY = e.clientY; if(typeof handleMouseTraces === "function") handleMouseTraces(); };
+window.onmousemove = (e) => { realMouseX = e.clientX; realMouseY = e.clientY; if(typeof handleMouseTraces === 'function') handleMouseTraces(); };
 
 function getDiffStats() { if (window.gameDifficulty === "medium") return { speed: 1.5, hp: 1.5 }; if (window.gameDifficulty === "hard") return { speed: 2, hp: 2 }; if (window.gameDifficulty === "extreme") return { speed: 5, hp: 4 }; return { speed: 1, hp: 1 }; }
 
-// Интерфейсные панели верхнего уровня
+// Отрисовка Баров
 const topBar = document.createElement("div"); topBar.style = "position:absolute;top:15px;left:20px;display:flex;gap:8px;z-index:9999;"; arena.appendChild(topBar);
 const spawnBtn = document.createElement("button"); spawnBtn.style = "padding:8px 16px;min-width:180px;background:black;color:#00ff00;border:2px solid #00ff00;font-family:monospace;cursor:pointer;font-weight:bold;"; topBar.appendChild(spawnBtn);
 const menuBtn = document.createElement("button"); menuBtn.textContent = "💻 RPG ПАНЕЛЬ УПРАВЛЕНИЯ"; menuBtn.style = "padding:8px 16px;background:black;color:#00ff00;border:2px solid #00ff00;font-family:monospace;cursor:pointer;font-weight:bold;"; topBar.appendChild(menuBtn);
@@ -120,7 +73,8 @@ for (let m in modes) { const opt = document.createElement("option"); opt.value =
 diffSelect.onchange = () => { window.gameDifficulty = diffSelect.value; localStorage.setItem("vGame_diff", window.gameDifficulty); updateInterfaceText(); };
 topBar.appendChild(diffSelect);
 
-const infoDisplayTable = document.createElement("div"); infoDisplayTable.style = "position:absolute;top:15px;right:20px;display:flex;gap:20px;color:#00ff00;font-family:monospace;font-size:20px;font-weight:bold;z-index:9999;background:rgba(0,0,0,0.8);padding:6px 15px;border:1px solid #333;"; arena.appendChild(infoDisplayTable);
+// ВЁРСТКА ФИКС: Счёт сдвинут на top: 60px, текст больше никогда не наложится!
+const infoDisplayTable = document.createElement("div"); infoDisplayTable.style = "position:absolute;top:60px;left:20px;display:flex;gap:20px;color:#00ff00;font-family:monospace;font-size:18px;font-weight:bold;z-index:9999;background:rgba(0,0,0,0.8);padding:6px 15px;border:1px solid #333;border-radius:4px;"; arena.appendChild(infoDisplayTable);
 const roundBoard = document.createElement("div"); infoDisplayTable.appendChild(roundBoard);
 const scoreBoard = document.createElement("div"); infoDisplayTable.appendChild(scoreBoard);
 
@@ -137,7 +91,7 @@ function updateInterfaceText() {
 }
 function updateSpawnButtonText() { spawnBtn.textContent = window.currentRound % 10 === 0 ? "ПРИЗВАТЬ БОССА РАУНДА" : `СПАВН ВИРУСА (${window.spawnedThisRound}/${window.currentRound})`; }
 
-// Пассивные доходы и добыча Кристаллов 💎
+// Пассивные механики v7
 setInterval(() => {
     if (window.labTubes > 0 && window.flyingViruses.length > 0) {
         if (window.flyingViruses.filter(v => !v.isZombie).length > 0) { window.score += window.labTubes * 50 * window.labLevel; saveAllData(); }
@@ -149,23 +103,20 @@ setInterval(() => {
         let throneOccupied = window.flyingViruses.some(v => v.isZombie && v.isKingOnThrone);
         if (throneOccupied) { window.score += 1000; window.dollars += 100; saveAllData(); }
         if (window.loot.prisoner_count > 0 && window.loot.mine_count > 0) {
-            let totalWorkers = Math.min(window.loot.prisoner_count, window.loot.mine_count * 3);
-            window.score += totalWorkers * 1000;
-            if(Math.random() < 0.05 * totalWorkers) { window.loot.crystals++; alert("💎 Твои рабы в глубоких шахтах откопали Драгоценный Кристалл!"); }
+            let totalWorkers = Math.min(window.loot.prisoner_count, window.loot.mine_count * 3); window.score += totalWorkers * 1000;
+            if(Math.random() < 0.05 * totalWorkers) { window.loot.crystals++; alert("💎 Твои рабочие в шахтах откопали Кристалл!"); }
             saveAllData();
         }
     }
 }, 60000);
 
-// Появление Бродячего Торговца Джавы
 function spawnTraderJava() {
     if (document.getElementById("traderJavaEl")) return;
     const s = document.createElement("div"); s.id = "traderJavaEl";
     s.style = "position:absolute;padding:12px;background:#1a0f00;border:3px double #d2691e;color:#ffd700;font-weight:bold;z-index:9996;cursor:pointer;box-shadow:0 0 20px #d2691e;";
     s.innerHTML = "🧙‍♂️ ТОРГОВЕЦ ДЖАВА<br><span style='font-size:10px;color:#aaa;'>[Кликни меня!]</span>";
     s.style.left = Math.random() * (window.innerWidth - 180) + "px"; s.style.top = 120 + Math.random() * (window.innerHeight - 200) + "px";
-    arena.appendChild(s);
-    s.onclick = (e) => { e.stopPropagation(); openTraderMenu(); };
+    arena.appendChild(s); s.onclick = (e) => { e.stopPropagation(); openTraderMenu(); };
     setTimeout(() => { if (s) s.remove(); }, 40000);
 }
 setInterval(() => { if (window.currentRound % 5 === 0 && window.flyingViruses.length > 0) spawnTraderJava(); }, 30000);
@@ -174,27 +125,21 @@ function openTraderMenu() {
     megaWindow.style.display = "flex";
     tabContainer.innerHTML = `<div style="border:2px solid #d2691e;padding:15px;background:#110a00;display:flex;flex-direction:column;gap:12px;color:#ffd700;">
         <h2 style="color:#ffd700;margin:0;">🧙‍♂️ КОНТРАБАНДНАЯ ЛАВКА ДЖАВЫ</h2>
-        <p style="color:#aaa;font-size:12px;margin:0;">Привет! Меняю редкие пассивки на твои Ресурсы.</p>
-        <b style="color:#00ffea;">Твои Кристаллы: ${window.loot.crystals || 0} 💎 | Доллары: ${window.dollars} 💵</b>
+        <b style="color:#00ffea;">Кристаллы: ${window.loot.crystals || 0} 💎 | Доллары: ${window.dollars} 💵</b>
         <div style="border-bottom:1px dashed #d2691e;padding-bottom:10px;"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #333;padding:8px;background:black;">
-            <div><b>⏱️ Часы Сетха</b><br><span style="color:#aaa;font-size:11px;">Увеличивают радиус ловли вашей Сетки в 2 раза!</span></div>
-            <button id="buyArtifact1" style="background:black;color:#ffd700;border:1px solid #ffd700;font-family:monospace;padding:6px;cursor:pointer;"></button>
+            <div><b>⏱️ Часы Сетха</b><br><span style="color:#aaa;font-size:11px;">Радиус ловли Сетки х2!</span></div>
+            <button id="buyArtifact1" style="background:black;color:#ffd700;border:1px solid #ffd700;padding:6px;cursor:pointer;"></button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #333;padding:8px;background:black;margin-top:5px;">
-            <div><b>🧬 Чёрный рынок ДНК</b><br><span style="color:#aaa;font-size:11px;">Обменять 20 Обычных ДНК 🟢 на 1 редкое Мутантное ДНК 🔴</span></div>
-            <button id="tradeDnaBtn" style="background:black;color:#00ff00;border:1px solid #00ff00;font-family:monospace;padding:6px;cursor:pointer;">ОБМЕНЯТЬ</button>
+            <div><b>🧬 Чёрный рынок ДНК</b><br><span style="color:#aaa;font-size:11px;">20 Обычных ДНК 🟢 на 1 Мутантное ДНК 🔴</span></div>
+            <button id="tradeDnaBtn" style="background:black;color:#00ff00;border:1px solid #00ff00;padding:6px;cursor:pointer;">ОБМЕНЯТЬ</button>
         </div>
     </div>`;
     const b1 = document.getElementById("buyArtifact1");
     if(window.netRadiusMultiplier > 1) { b1.textContent = "КУПЛЕНО"; b1.disabled = true; b1.style.color = "#555"; b1.style.borderColor = "#555"; }
-    else {
-        b1.textContent = "КУПИТЬ (2,000 💵)";
-        b1.onclick = () => { if(window.dollars >= 2000) { window.dollars -= 2000; window.netRadiusMultiplier = 2; localStorage.setItem("vGame_netMult", 2); saveAllData(); openTraderMenu(); alert("⏱️ Радиус Сетки Ловца увеличен в 2 раза!"); } else alert("Не хватает Долларов!"); };
-    }
-    document.getElementById("tradeDnaBtn").onclick = () => {
-        if(window.loot.dna_normal >= 20) { window.loot.dna_normal -= 20; window.loot.dna_mutant += 1; saveAllData(); openTraderMenu(); alert("🧬 Успешный обмен ДНК у Торговца!"); } else alert("Не хватает Обычных ДНК (нужно 20 шт)!");
-    };
+    else { b1.textContent = "КУПИТЬ (2,000 💵)"; b1.onclick = () => { if(window.dollars >= 2000) { window.dollars -= 2000; window.netRadiusMultiplier = 2; localStorage.setItem("vGame_netMult", 2); saveAllData(); openTraderMenu(); alert("⏱️ Радиус сетки увеличен!"); } else alert("Не хватает Долларов!"); }; }
+    document.getElementById("tradeDnaBtn").onclick = () => { if(window.loot.dna_normal >= 20) { window.loot.dna_normal -= 20; window.loot.dna_mutant += 1; saveAllData(); openTraderMenu(); alert("🧬 Обмен завершен!"); } else alert("Нужно 20 Обычных ДНК!"); };
 }
 // Навигация и инициализация окон управления
 const megaWindow = document.createElement("div"); megaWindow.style = "position:absolute;top:70px;left:20px;width:calc(100vw - 40px);height:calc(100vh - 180px);background:#000000;border:2px solid #00ff00;z-index:10000;display:none;flex-direction:column;padding:15px;box-sizing:border-box;"; arena.appendChild(megaWindow);
@@ -290,7 +235,6 @@ function renderLab() {
     document.getElementById("craftVac").onclick = () => { if(window.loot.captured_viruses >= 3) { window.loot.captured_viruses -= 3; window.loot.vaccine_br1++; saveAllData(); renderLab(); } else alert("Мало пленных клеток!"); };
     document.getElementById("testVac").onclick = () => { if(window.loot.vaccine_br1 >= 1) { window.loot.vaccine_br1--; if(Math.random() < 0.75) { window.score += 50000; alert("Тест успешен! Выделен государственный грант: +50,000 брелеров!"); } else { window.creatureUnlocked = true; alert("Ошибка! Штамм мутировал в секретное Существо-644448684!"); } saveAllData(); renderLab(); } else alert("Нет вакцин для проведения тестов!"); };
 }
-
 function renderHelpersUpgrades() {
     const box = document.createElement("div"); box.innerHTML = `<h2>👥 УЛУЧШЕНИЕ ХАРАКТЕРИСТИК АРМИИ</h2>`;
     const list = [{ name: "🛡️ Броня Зомби/Орков (+50)", key: "zombie_armor", cost: 500 }];
@@ -320,10 +264,7 @@ function renderBonusesShop() {
     tabContainer.appendChild(box);
 }
 
-function spawnGazan() { window.spawnedThisRound = 1; createVirusElement(1000000, true, false, "gazan"); }
-function spawnSauronFight() { document.getElementById("volcanoEl").style.display = "block"; window.spawnedThisRound = 1; createVirusElement(99999999, true, false, "sauron"); const r = document.createElement("div"); r.id = "sauronRing"; r.style = "position:absolute;left:100px;top:200px;width:40px;height:40px;border-radius:50%;background:gold;box-shadow:0 0 20px gold;cursor:grab;z-index:9996;text-align:center;line-height:40px;font-weight:bold;color:red;"; r.textContent = "💍"; arena.appendChild(r); }
-
-// Новая плиточная RPG-сетка инвентаря
+// Новая плиточная RPG-сетка инвентаря (ФИКС: Теперь выбранная пушка горит белым неоном!)
 function renderInventory() {
     if (window.sauronStatus) {
         const sBox = document.createElement("div"); sBox.style = "border:2px solid #4b0082;padding:10px;margin-bottom:15px;background:#110022;";
@@ -335,25 +276,12 @@ function renderInventory() {
 
     const h = document.createElement("h3"); h.textContent = "🎒 СЛОТЫ RPG РЮКЗАКА (КЛИКНИТЕ ДЛЯ ВЫБОРА)"; tabContainer.appendChild(h);
     const grid = document.createElement("div"); grid.className = "inv-grid";
-    
-    const names = { 
-        laser: "Лазер", bomb_default: "Бомба", brick: "Кирпич", poison: "Отрава", darkBlade: "Меч Тьмы 🌌", 
-        gandalfStaff: "Посох Гэндальфа 🧙‍♂️", hypnosis: "Гипноз 🌀", godLight: "Свет Бога ☀️", luciferSword: "Меч Люцифера 🔥", 
-        saber: "Сабля", flyingMechSword: "Летающий меч ⚔️", callLuciferPet: "Призыв Люцифера", shocker: "Электрошокер", 
-        human_gun: "Пушка Людей 🔫", human_axe: "Топор Людей", vader_saber: "Меч Вейдера 🌌", sauron_yatagan: "Ятаган Саурона 👁️", 
-        sith_mask: "Маска Ситха", kinetic_annihilator: "Аннигилятор", fire_brick: "Огненный Кирпич 🧱", 
-        wooden_hammer: "Молот 🔨", rusty_axe: "Ржавый Топор 🪓", kitchen_knife: "Кухонный Нож 🔪", 
-        heavy_club: "Дубина 🪵", broken_pitchfork: "Вилы 🔱", boomerang: "Бумеранг 🪃", dart: "Дротик 🎯", 
-        coin: "Монетка 🪙", paper_plane: "Самолетик 🪁", bowling_ball: "Шар Боулинга", water_gun: "Водный Пистолет 🔫", 
-        water_balloon: "Шарик с Водой 🎈", glue_bottle: "Клей 🪟", fan: "Вентилятор 💨", pepper_spray: "Баллончик 🌶️", 
-        magnet: "Магнит 🧲", flash: "Вспышка 📸", yoyo: "Йо-Йо 🪀", bubbles: "Пузыри 🧼", box_wall: "Коробка 📦", 
-        magic_wand: "Палочка 🪄", huggy_hand: "Рука Хагги 🧸", mommy_hand: "Рука Мамочки 🕸️", crab_claws: "Клешни 🦀", 
-        mcd_tray: "Поднос 🍱", ninja_shuriken: "Сюрикены 🥷", ninja_katana: "Катана Самурая ⚔️", king_crown: "Корона Короля 👑", 
-        king_castle_item: "Замок 🏰", king_throne_item: "Трон 🪑", catcher_net: "Сетка ЛОВЦА 🕸️" 
-    };
+    const names = { laser: "Лазер", bomb_default: "Бомба", brick: "Кирпич", poison: "Отрава", darkBlade: "Меч Тьмы 🌌", gandalfStaff: "Посох Гэндальфа 🧙‍♂️", hypnosis: "Гипноз 🌀", luciferSword: "Меч Люцифера 🔥", saber: "Сабля", human_gun: "Пушка", vader_saber: "Меч Вейдера", sauron_yatagan: "Ятаган Саурона", magic_wand: "Палочка 🪄", ninja_shuriken: "Сюрикены 🥷", ninja_katana: "Катана ⚔️", king_crown: "Корона 👑", catcher_net: "Сетка ЛОВЦА 🕸️" };
     
     window.unlockedWeapons.forEach(wId => {
-        const slot = document.createElement("div"); slot.className = "inv-slot"; if(window.currentWeapon === wId) slot.style.borderColor = "#fff";
+        const slot = document.createElement("div"); slot.className = "inv-slot"; 
+        // НЕОНОВЫЙ ФИКС: Если пушка выбрана, вешаем класс яркого белого свечения
+        if(window.currentWeapon === wId) { slot.classList.add("inv-slot-active"); }
         slot.innerHTML = `<b>${names[wId] || wId}</b><br><span style="font-size:10px;color:#aaa;">Ур.${window.weaponLevels[wId]||1}</span>`;
         slot.style.cursor = "pointer"; slot.onclick = () => { window.currentWeapon = wId; updateInterfaceText(); renderInventory(); }; grid.appendChild(slot);
     });
@@ -364,14 +292,22 @@ function renderInventory() {
     lDiv.innerHTML = `🟢 Обычные ДНК: <b>${window.loot.dna_normal} шт.</b> | 🟣 Шпионские ДНК: <b>${window.loot.dna_spy} шт.</b><br>🟡 Докторские ДНК: <b>${window.loot.dna_doctor} шт.</b> | 🔴 Мутантные ДНК: <b>${window.loot.dna_mutant} шт.</b>`;
     tabContainer.appendChild(lDiv);
 }
-// ДВИЖОК ДВИЖЕНИЯ, ОТСКОКОВ И АВТО-СПАВНА МИНЬОНОВ
+
 function createVirusElement(hp, isB, isL, type) {
     const a = document.createElement("div"); a.style = "position:absolute;background:black;font-family:monospace;font-weight:bold;cursor:crosshair;z-index:9995;padding:8px;border:1px solid red;color:red;";
-    a.textContent = isB ? `👑 БОСС [${hp}]` : `[${type.toUpperCase()}] ${hp} HP`;
-    a.style.left = Math.random() * (window.innerWidth - 150) + "px"; a.style.top = 100 + Math.random() * (window.innerHeight - 200) + "px";
-    arena.appendChild(a);
-    let s = (isB) ? 4 : 6;
-    let vObj = { element: a, x: parseFloat(a.style.left), y: parseFloat(a.style.top), speedX: (Math.random() - 0.5) * s, speedY: (Math.random() - 0.5) * s, hp: hp, maxHp: hp, isBoss: isB, type: type, isFrozen: false, isZombie: false };
+    if (type === "lucifer") { a.style = "position:absolute;border:6px solid #ff4500;padding:40px;fontSize:26px;color:#fff;background:linear-gradient(45deg,#ff4500,#ff8c00);left:40%;top:40%;"; a.textContent = "😈 ЛЮЦИФЕР"; }
+    else if (type === "gazan") { a.style = "position:absolute;border:5px dashed #00ffff;padding:30px;fontSize:22px;color:#00ffff;left:40%;top:40%;"; a.textContent = "🎵 ГАЗАН"; }
+    else if (type === "sauron") { a.style = "position:absolute;border:5px solid #4b0082;padding:35px;fontSize:24px;color:#fff;left:40%;top:40%;"; a.textContent = "👁️ САУРОН [INF HP]"; }
+    else {
+        if (type === "spy") { a.style.borderColor = "#ff00ff"; a.style.color = "#ff00ff"; a.textContent = `🕵️ ШПИОН [${hp}]`; }
+        else if (type === "doctor") { a.style.borderColor = "#00ff00"; a.style.color = "#00ff00"; a.textContent = `🩺 ДОКТОР [${hp}]`; }
+        else if (type === "mutant") { a.style.borderColor = "#ff3300"; a.style.color = "#ff3300"; a.textContent = `🧬 МУТАНТ [${hp}]`; }
+        else { a.textContent = `🦠 ВИРУС [${hp}]`; }
+        a.style.left = Math.random() * (window.innerWidth - 150) + "px"; a.style.top = 100 + Math.random() * (window.innerHeight - 200) + "px";
+    }
+    arena.appendChild(a); const o = getDiffStats();
+    let s = (isL || ["gazan","sauron"].includes(type)) ? 18 : (isB ? 12 : 5) * o.speed * (1 + window.currentRound * 0.05);
+    let vObj = { element: a, x: parseFloat(a.style.left) || 200, y: parseFloat(a.style.top) || 200, speedX: (Math.random() - 0.5) * s, speedY: (Math.random() - 0.5) * s, hp: hp, maxHp: hp, isBoss: isB, type: type, isFrozen: false, isZombie: false };
     window.flyingViruses.push(vObj);
     if(type === "gazan") { vObj.gInt = setInterval(() => { if (window.flyingViruses.includes(vObj)) { vObj.x = Math.random()*(window.innerWidth-180); vObj.y = 100+Math.random()*(window.innerHeight-180); } else clearInterval(vObj.gInt); }, 2000); }
 }
@@ -399,7 +335,7 @@ setInterval(() => {
     });
 }, 2500);
 
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ УРОНА ПРИ ВЕДЕНИИ МЫШКОЙ (Даркблейд, Катана и Люцифер теперь режут!)
+// ИСПРАВЛЕННОЕ ВЕДЕНИЕ МЫШИ (handleMouseTraces теперь режет Мечом Тьмы, Катаной и Люцифером!)
 function handleMouseTraces() {
     window.flyingViruses.forEach(v => {
         if (!v.element || v.isZombie || v.isCaptured) return;
@@ -434,7 +370,6 @@ setInterval(() => {
     });
 }, 1000);
 
-// ИСПРАВЛЕННЫЙ ОБРАБОТЧИК КЛИКОВ ПО СЕТКЕ, ПЛЕННИКАМ И КРАФТУ
 arena.onclick = function(e) {
     const t = e.target; const isV = t && t.textContent && window.flyingViruses.some(v => v.element === t);
     if (isV) {
@@ -450,7 +385,7 @@ arena.onclick = function(e) {
     if (window.currentWeapon === "king_crown" && !isV) {
         let typeChoice = prompt("Кого призвать?\n1 - Страж-Доктор\n3 - Разведчик\n5 - Шахтёр");
         if(typeChoice === "3") { window.scouts.push({ x: realMouseX, y: realMouseY }); const h = document.createElement("div"); h.style = `position:absolute;left:${realMouseX}px;top:${realMouseY}px;padding:6px;background:black;border:2px dotted #fff;color:#fff;z-index:9994;`; h.textContent = "🕵️ РАЗВЕДЧИК"; arena.appendChild(h); }
-        if(typeChoice === "5") { window.loot.mine_count++; const m = document.createElement("div"); m.className = "king-mine"; m.style = `left:${realMouseX}px;top:${realMouseY}px;`; m.textContent = "⚒️"; arena.appendChild(m); saveAllData(); }
+        if(typeChoice === "5") { window.loot.mine_count++; const m = document.createElement("div"); m.className = "king-mine"; m.style = `left:${realMouseX}px;top:${realMouseY-30}px;`; m.textContent = "⚒️"; arena.appendChild(m); saveAllData(); }
     }
 };
 
@@ -462,6 +397,8 @@ function damageVirus(e, t) {
     } else { updateVirusText(e); }
 }
 
+function updateVirusText(v) { if(v.element) v.element.textContent = v.isZombie ? `🧟 ZOMBIE [${v.hp}]` : `[${v.type.toUpperCase()}] ${v.hp} HP`; }
+
 spawnBtn.onclick = function(e) {
     e.stopPropagation(); let max = window.currentRound % 10 === 0 ? 1 : window.currentRound; if (window.spawnedThisRound >= max) return;
     window.spawnedThisRound++; updateSpawnButtonText();
@@ -470,7 +407,7 @@ spawnBtn.onclick = function(e) {
     createVirusElement(hp, isB, false, type);
 };
 
-// ХОТКЕИ Q, E, K ПОЛНОСТЬЮ ПРИВЯЗАНЫ К КООРДИНАТАМ КУРСОРA С НАВЕДЕНИЕМ
+// ХОТКЕИ ФИКС: Стены Саурона ложатся ровно под кончик курсора!
 window.onkeydown = function(e) {
     const k = e.key.toLowerCase();
     if (k === 'q' || k === 'й') { window.flyingViruses.forEach(v => { if(!v.isZombie) damageVirus(v, 1500); }); const wave = document.createElement("div"); wave.className = "sound-wave"; wave.style = `left:${realMouseX-100}px;top:${realMouseY-100}px;width:200px;height:200px;`; arena.appendChild(wave); setTimeout(()=>wave.remove(), 800); }
